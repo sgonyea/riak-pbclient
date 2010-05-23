@@ -1,0 +1,60 @@
+= riak
+
+* http://github.com/aitrus/riak-pbclient
+
+== DESCRIPTION:
+
+FIX (describe your package)
+
+== FEATURES/PROBLEMS:
+
+* FIX (list of features or problems)
+
+== SYNOPSIS:
+
+irb(main):001:0> require 'lib/riak'
+ => true
+irb(main):002:0> rc = Riak::Client.new
+ => #<Riak::Client:0x00000100932f90 @host="127.0.0.1", @port=8087, @bucket_list=[], @buckets=[]>
+irb(main):003:0> rc.ping?
+ => true
+irb(main):004:0> rc
+ => #<Riak::Client:0x00000100932f90 @host="127.0.0.1", @port=8087, @bucket_list=[], @buckets=[], @rpc=#<Riak::Client::Rpc:0x00000101075988 @client=#<Riak::Client:0x00000100932f90 ...>, @req_message="\x00\x00\x00\x01\x01", @resp_message="\x00\x00\x00\x01\x02", @resp_message_code=2, @response="">>
+irb(main):005:0> rc.rpc
+ => #<Riak::Client::Rpc:0x00000101075988 @client=#<Riak::Client:0x00000100932f90 @host="127.0.0.1", @port=8087, @bucket_list=[], @buckets=[], @rpc=#<Riak::Client::Rpc:0x00000101075988 ...>>, @req_message="\x00\x00\x00\x01\x01", @resp_message="\x00\x00\x00\x01\x02", @resp_message_code=2, @response="">
+irb(main):006:0> 
+
+  FIX (code sample of usage)
+
+== REQUIREMENTS:
+
+* FIX (list of requirements)
+
+== INSTALL:
+
+* FIX (sudo gem install, anything else)
+
+== LICENSE:
+
+(The MIT License)
+
+Copyright (c) 2010 Scott G.
+
+Permission is hereby granted, free of charge, to any person obtaining
+a copy of this software and associated documentation files (the
+'Software'), to deal in the Software without restriction, including
+without limitation the rights to use, copy, modify, merge, publish,
+distribute, sublicense, and/or sell copies of the Software, and to
+permit persons to whom the Software is furnished to do so, subject to
+the following conditions:
+
+The above copyright notice and this permission notice shall be
+included in all copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED 'AS IS', WITHOUT WARRANTY OF ANY KIND,
+EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
+IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY
+CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
+TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
+SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
