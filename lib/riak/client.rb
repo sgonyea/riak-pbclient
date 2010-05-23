@@ -32,6 +32,7 @@ module Riak
     def initialize(host="127.0.0.1", port=8087)
       self.host         = host
       self.port         = port
+      @_buckets         = []
     end
     attr_reader :host, :port, :buckets, :_buckets
 
@@ -85,17 +86,19 @@ module Riak
     
     # Lists the buckets found in the Riak database
     # @raise [ReturnRespError] if the message response does not correlate with the message requested
-    # @return [RpbListBucketsResp] a list of the buckets
+    # @return [Array] list of buckets (String)
     def list_buckets
       rpc.request LIST_BUCKETS_REQUEST
       
       raise ReturnRespError,
         t("response_incorrect") if rpc.resp_message_code != LIST_BUCKETS_RESPONSE
       
-      @_buckets = RpbListBucketsResp.new
+      pb_lbr = RpbListBucketsResp.new
       
-      @_buckets.parse_from_string rpc.response
+      pb_lbr.parse_from_string rpc.response
       
+      # iterate through each of the Strings in the Bucket list, returning an array of String(s)
+      @_buckets = pb_lbr.buckets.each{|b| b}
     end
 
     private
