@@ -6,7 +6,7 @@ module Riak
       include Riak::Util::Encode
       include Riak::Util::Decode
       
-      attr_reader :req_message, :response, :resp_message_code, :resp_messages
+      attr_reader :req_message, :response, :resp_message_code, :resp_message
       
       def initialize(client)
         @client = client

@@ -18,14 +18,12 @@ module Riak
     
     module Decode
       
-      private
-      
       def decode_message(message)
-        size = message[0..3].unpack('N')[0]
+        msg_len = message[0..3].unpack('N')[0]
         
-        raise ResponseError t('response_size_mismatch') if((size + 4) != message.size)
+        raise ResponseError t('response_size_mismatch') if((msg_len + 4) != message.size)
         
-        message[4..(message.size)].unpack('ca#{size-1}')
+        message[4..(message.length-1)].unpack("ca#{msg_len-1}")
       end
 
     end 

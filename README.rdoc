@@ -4,7 +4,7 @@
 
 == DESCRIPTION:
 
-FIX (describe your package)
+Dr. Nic got a PhD and he still can't read my mind and fill this in for me.  L-o-s-e-r, amirite?
 
 == FEATURES/PROBLEMS:
 
