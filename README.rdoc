@@ -4,7 +4,7 @@
 
 == DESCRIPTION:
 
-Dr. Nic got a PhD and he still can't read my mind and fill this in for me.
+This is a Riak client, using protocol buffers, in Ruby
 
 == FEATURES/PROBLEMS:
 
