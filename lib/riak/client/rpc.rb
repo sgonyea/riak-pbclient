@@ -107,9 +107,9 @@ module Riak
             self.response = socket.recv(2000)
             
           end while(false == @response.done rescue false)
-          
-          return(@response)
         end # with_socket
+        
+        return(@response)
       end # stream_request
       
       
