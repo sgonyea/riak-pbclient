@@ -3,6 +3,7 @@ require 'socket'
 module Riak
   class Client
     class Rpc
+      include Riak::Util::MessageCode
       include Riak::Util::Encode
       include Riak::Util::Decode
       
@@ -10,12 +11,20 @@ module Riak
       
       def initialize(client)
         @client             = client
+        @client_id          = request(Riak::Util::MessageCode::GET_CLIENT_ID_REQUEST,
+                                      nil,
+                                      Riak::RpbGetClientIdResp
+                              ).client_id
+        @set_client_id      = Riak::RpbSetClientIdReq.new(:client_id => @client_id)
+        
+        # Request / Response Data
         @resp_message_code  = -1
         @resp_message       = ''
         @req_message        = ''
         @response           = ''
         @responses          = []
       end
+      
       
       def clear
         @resp_message_code  = -1
@@ -24,22 +33,31 @@ module Riak
         @response           = ''
         @responses          = []
       end
-
+      
+      
       def with_socket(&block)
-        socket    = TCPSocket.open(@client.host, @client.port)
-        out       = yield(socket)
+        socket              = TCPSocket.open(@client.host, @client.port)
+        set_client_id(socket) if @set_client_id
         
+        out                 = yield(socket)
         socket.close
         
-        out
+        return(out)
       end
       
-      def call_riak(msg)
-        with_socket do |socket|
-          socket.send(msg, 0)
-          self.response = socket.recv(2000)
-        end
+      
+      def set_client_id(socket)
+        set_c_id_req  = assemble_request( Riak::Util::MessageCode::SET_CLIENT_ID_REQUEST,
+                                          @set_client_id.serialize_to_string)
+
+        socket.send(set_c_id_req, 0)
+        set_c_id_resp = socket.recv(2000)
+        
+        resp_code, resp_msg = decode_message(set_c_id_resp)
+        
+        return resp_code == Riak::Util::MessageCode::SET_CLIENT_ID_RESPONSE
       end
+      
       
       def request(mc, pb_msg=nil, pb_resp_class=nil)
         clear
@@ -49,27 +67,32 @@ module Riak
           pb_msg.is_a?(NilClass)
         
         
-        @response = pb_resp_class.new rescue nil
+        @response           = pb_resp_class.new rescue nil
         
         with_socket do |socket|
           begin
-            @req_message = assemble_request mc, (pb_msg.serialize_to_string rescue '')
+            @req_message  = assemble_request mc, (pb_msg.serialize_to_string rescue '')
             
             socket.send(@req_message, 0)
             self.response = socket.recv(2000)
             
           end while(false == @response.done rescue false)
+          
+          return(@response)
         end # with_socket
       end # stream_request
       
+      
       def response=(value)
-        @resp_message = value
+        @resp_message         = value
         
         @resp_message_code, response_chunk = decode_message(value)
         
         if response_chunk.size > 0
           @response.parse_from_string response_chunk
         end
+        
+        return(@response)
       end
       
     end # class Client

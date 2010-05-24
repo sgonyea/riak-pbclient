@@ -16,7 +16,7 @@ require 'riak'
 module Riak
   # Represents and encapsulates operations on a Riak bucket.  You may retrieve a bucket
   # using {Client#bucket}, or create it manually and retrieve its meta-information later.
-  class Bucket
+  class Bucket < Riak::RiakObject
     include Util::Translation
     include Util::Escape
 
@@ -34,8 +34,8 @@ module Riak
     # @param [Client] client the {Riak::Client} for this bucket
     # @param [String] name the name of the bucket
     def initialize(client, name)
-      raise ArgumentError, t("client_type", :client => client.inspect) unless Client === client
-      raise ArgumentError, t("string_type", :string => name.inspect) unless String === name
+      raise ArgumentError, t("client_type", :client => client.inspect)  unless client.is_a?(Client)
+      raise ArgumentError, t("string_type", :string => name.inspect)    unless name.is_a?(String)
       @client, @name, @props = client, name, {}
     end
 
