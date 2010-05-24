@@ -50,9 +50,6 @@ Dr. Nic got a PhD and he still can't read my mind and fill this in for me.  L-o-
 
   >> 
 
-
-  FIX (code sample of usage)
-
 == REQUIREMENTS:
 
 * FIX (list of requirements)
