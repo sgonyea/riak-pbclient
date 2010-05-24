@@ -22,13 +22,15 @@ module Riak
   # the data and metadata stored in a bucket/key pair in the Riak database.
   class RiakObject
     include Util::Translation
+    include Util::MessageCode
     
     # @return [String] the Riak vector clock for the object
     attr_accessor :vclock
     alias_attribute :vector_clock, :vclock
     
-    # @return [String] the 'value' attribute of the RpbContent protocol buffer message
+    # @return [String] the data stored in Riak at this object's key. Varies in format by content-type, defaulting to String from the response body.
     attr_accessor :value
+    alias_attribute :data, :value
     
     # @return [String] the MIME content type of the object
     attr_accessor :content_type
@@ -63,9 +65,6 @@ module Riak
     # @return [String] the key of this object within its bucket
     attr_accessor :key
     
-    # @return [Object] the data stored in Riak at this object's key. Varies in format by content-type, defaulting to String from the response body.
-    attr_accessor :data
-    
     # @return [String] the ETag header from the most recent HTTP response, useful for caching and reloading
     attr_accessor :etag
     
@@ -73,11 +72,11 @@ module Riak
     # @param [Bucket] bucket the bucket in which the object exists
     # @param [String] key the key at which the object resides. If nil, a key will be assigned when the object is saved.
     # @see Bucket#get
-    def initialize(client, bucket, key=nil, data=nil)
+    def initialize(client, bucket, key=nil, value=nil)
       @client = client
       @bucket = bucket
       @key    = key
-      @data   = data
+      @value  = value
       @links, @meta = Set.new, {}
       yield self if block_given?
     end
@@ -98,6 +97,26 @@ module Riak
       load(response)
     end
 
+    # Delete the object from Riak and freeze this instance.  Will work whether or not the object actually
+    # exists in the Riak database.
+    def delete
+      return if key.blank?
+      @bucket.delete(key)
+      freeze
+    end
+
+    # @return [true,false] Whether this object has conflicting sibling objects (divergent vclocks)
+    def conflict?
+      @conflict.present?
+    end
+
+    # @return [String] A representation suitable for IRB and debugging output
+    def inspect
+      "#<#{self.class.name} #{url} [#{@content_type}]:#{@data.inspect}>"
+    end
+    
+=begin
+    
     # Reload the object from Riak.  Will use conditional GETs when possible.
     # @param [Hash] options query parameters
     # @option options [Fixnum] :r the "r" parameter (Read quorum)
@@ -111,17 +130,9 @@ module Riak
       load(response) unless response[:code] == 304
       self
     end
-
     alias :fetch :reload
-
-    # Delete the object from Riak and freeze this instance.  Will work whether or not the object actually
-    # exists in the Riak database.
-    def delete
-      return if key.blank?
-      @bucket.delete(key)
-      freeze
-    end
-
+    
+    
     # Returns sibling objects when in conflict.
     # @return [Array<RObject>] an array of conflicting sibling objects for this key
     # @return [self] this object when not in conflict
@@ -133,65 +144,6 @@ module Riak
           sibling.vclock = vclock
         end
       end
-    end
-
-    # @return [true,false] Whether this object has conflicting sibling objects (divergent vclocks)
-    def conflict?
-      @conflict.present?
-    end
-
-    # Serializes the internal object data for sending to Riak. Differs based on the content-type.
-    # This method is called internally when storing the object.
-    # Automatically serialized formats:
-    # * JSON (application/json)
-    # * YAML (text/yaml)
-    # * Marshal (application/octet-stream if meta['ruby-serialization'] == "Marshal")
-    # @param [Object] payload the data to serialize
-    def serialize(payload)
-      return payload if IO === payload
-      case @content_type
-      when /json/
-        ActiveSupport::JSON.encode(payload)
-      when /yaml/
-        YAML.dump(payload)
-      when "application/octet-stream"
-        if @meta['ruby-serialization'] == "Marshal"
-          Marshal.dump(payload)
-        else
-          payload.to_s
-        end
-      else
-        payload.to_s
-      end
-    end
-
-    # Deserializes the internal object data from a Riak response. Differs based on the content-type.
-    # This method is called internally when loading the object.
-    # Automatically deserialized formats:
-    # * JSON (application/json)
-    # * YAML (text/yaml)
-    # * Marshal (application/octet-stream if meta['ruby-serialization'] == "Marshal")
-    # @param [String] body the serialized response body
-    def deserialize(body)
-      case @content_type
-      when /json/
-        ActiveSupport::JSON.decode(body)
-      when /yaml/
-        YAML.load(body)
-      when "application/octet-stream"
-        if @meta['ruby-serialization'] == "Marshal"
-          Marshal.load(body)
-        else
-          body
-        end
-      else
-        body
-      end
-    end
-
-    # @return [String] A representation suitable for IRB and debugging output
-    def inspect
-      "#<#{self.class.name} #{url} [#{@content_type}]:#{@data.inspect}>"
     end
 
     # Walks links from this object to other objects in Riak.
@@ -212,23 +164,9 @@ module Riak
       Link.new(@bucket.client.http.path(@bucket.client.prefix, escape(@bucket.name), escape(@key)).path, tag)
     end
 
-    # Generates a URL representing the object according to the client, bucket and key.
-    # If the key is blank, the bucket URL will be returned (where the object will be
-    # submitted to when stored).
-    def url
-      segments = [ @bucket.client.prefix, escape(@bucket.name)]
-      segments << escape(@key) if @key
-      @bucket.client.http.path(*segments).to_s
-    end
+=end
 
     private
-    def extract_header(response, name, attribute=nil)
-      if response[:headers][name].present?
-        value = response[:headers][name].try(:first)
-        value = yield value if block_given?
-        send("#{attribute}=", value) if attribute
-      end
-    end
 
     def map_walk_group(group)
       group.map do |obj|

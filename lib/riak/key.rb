@@ -20,8 +20,6 @@ module Riak
   # Represents and encapsulates operations on a Riak bucket.  You may retrieve a bucket
   # using {Client#bucket}, or create it manually and retrieve its meta-information later.
   class Key < Riak::RiakObject
-    include Util::Translation
-    include Util::Escape
 
     # @return [Riak::Client] the associated client
     attr_reader :client

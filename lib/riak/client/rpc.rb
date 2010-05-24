@@ -27,7 +27,7 @@ module Riak
       include Riak::Util::Encode
       include Riak::Util::Decode
       
-      attr_reader :req_message, :response, :resp_message_code, :resp_message, :responses
+      attr_reader :req_message, :response, :resp_message_code, :resp_message
       
       # Establishes a Client ID with the Riak node, for the life of the RPC connection.
       # @param [Client] the Riak::Client object in which this Rpc instance lives
@@ -44,7 +44,6 @@ module Riak
         @resp_message       = ''
         @req_message        = ''
         @response           = ''
-        @responses          = []
       end
       
       # Clears the request / response data, in preparation for a new request
@@ -53,7 +52,6 @@ module Riak
         @resp_message       = ''
         @req_message        = ''
         @response           = ''
-        @responses          = []
       end
       
       # Opens a TCPSocket connection with the riak host/node
@@ -96,8 +94,7 @@ module Riak
           pb_msg.is_a?(Protobuf::Message) or
           pb_msg.is_a?(NilClass)
         
-        
-        @response           = pb_resp_class.new rescue nil
+        @response = pb_resp_class.new rescue nil
         
         with_socket do |socket|
           begin

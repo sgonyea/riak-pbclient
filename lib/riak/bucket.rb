@@ -20,26 +20,30 @@ module Riak
   # Represents and encapsulates operations on a Riak bucket.  You may retrieve a bucket
   # using {Client#bucket}, or create it manually and retrieve its meta-information later.
   class Bucket < Riak::RiakObject
-    include Util::Translation
-    include Util::Escape
 
     # @return [Riak::Client] the associated client
     attr_reader :client
 
     # @return [String] the bucket name
-    attr_reader :name
+    attr_reader :bucket_name
 
     # @return [Hash] Internal Riak bucket properties.
     attr_reader :props
     alias_attribute :properties, :props
     
+    # @return [RpbGetResp] This bucket, as seen from the moon^h^h^h^h riak node, in protocol buffer form
+    attr_reader :pb_bucket
+    
+    # @return [RpbGetBucketResp] This bucket's properties- also from the moon
+    attr_reader :pb_props
+    
     # Create a Riak bucket manually.
     # @param [Client] client the {Riak::Client} for this bucket
     # @param [String] name the name of the bucket
-    def initialize(client, name)
-      raise ArgumentError, t("client_type", :client => client.inspect)  unless client.is_a?(Client)
-      raise ArgumentError, t("string_type", :string => name.inspect)    unless name.is_a?(String)
-      @client, @name, @props = client, name, {}
+    def initialize(client, bucket_name)
+      raise ArgumentError, t("client_type", :client => client.inspect)      unless client.is_a?(Client)
+      raise ArgumentError, t("string_type", :string => bucket_name.inspect) unless bucket_name.is_a?(String)
+      @client, @bucket_name, @props = client, bucket_name, {}
     end
 
     # Load information for the bucket from a response given by the {Riak::Client::HTTPBackend}.
@@ -107,7 +111,7 @@ module Riak
     # @param [String] key the key of the new object
     # @return [RObject] the new, unsaved object
     def new(key=nil)
-      RObject.new(self, key).tap do |obj|
+      RiakObject.new(self, key).tap do |obj|
         obj.content_type = "application/json"
       end
     end
