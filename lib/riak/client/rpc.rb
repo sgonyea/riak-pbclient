@@ -91,10 +91,9 @@ module Riak
         clear
         
         raise TypeError, t("pb_message_invalid") unless 
-          pb_msg.is_a?(Protobuf::Message) or
-          pb_msg.is_a?(NilClass)
+          pb_msg.is_a?(Protobuf::Message) or pb_msg.is_a?(NilClass)
         
-        @response = pb_resp_class.new rescue nil
+        @response = (pb_resp_class.new rescue nil)
         
         with_socket do |socket|
           begin
@@ -103,7 +102,7 @@ module Riak
             socket.send(@req_message, 0)
             self.response = socket.recv(2000)
             
-          end while(false == @response.done rescue false)
+          end while(false == (@response.done rescue true))
         end # with_socket
         
         return(@response)
