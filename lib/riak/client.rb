@@ -1,5 +1,7 @@
+# Copyright 2010, Scott Gonyea
+#
+#                     Shamelessly lifted from:
 # Copyright 2010 Sean Cribbs, Sonian Inc., and Basho Technologies, Inc.
-#        Copyright 2010 Scott Gonyea, Inherently Lame, Inc.
 #
 #    Licensed under the Apache License, Version 2.0 (the "License");
 #    you may not use this file except in compliance with the License.
@@ -12,7 +14,7 @@
 #    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #    See the License for the specific language governing permissions and
 #    limitations under the License.
-#require 'riak'
+require 'riak'
 
 module Riak
   # A client connection to Riak.
@@ -65,12 +67,24 @@ module Riak
     # @option options [Boolean] :keys (true) whether to retrieve the bucket keys
     # @option options [Boolean] :props (true) whether to retreive the bucket properties
     # @return [Bucket] the requested bucket
-    def get_bucket(name, options={})
+    def get_bucket(bucket, options={})
       options.assert_valid_keys(:keys, :props)
-      response = http.get(200, prefix, escape(name), options, {})
-      Bucket.new(self, name).load(response)
+      response = http.get(200, prefix, escape(bucket), options, {})
+      Bucket.new(self, bucket).load(response)
     end
     alias :[] :get_bucket
+    
+    # Retrieves a key, stored in the given bucket, from Riak.
+    # @param [String] bucket the bucket from which to retrieve the key
+    # @param [String] key the name of the key to be received
+    # @param [Hash] options options for retrieving the key
+    # @option options [Boolean] :props (true) whether to retreive the bucket properties
+    # @return [Key] the requested key
+    def get_key(bucket, key, options={})
+      options.assert_valid_keys(:props)
+      response = http.get(200, prefix, escape(name), options, {})
+      Key.new(self, name).load(response)
+    end
     
     # @return [String] A representation suitable for IRB and debugging output.
 #      def inspect

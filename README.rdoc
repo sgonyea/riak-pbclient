@@ -12,17 +12,44 @@ Dr. Nic got a PhD and he still can't read my mind and fill this in for me.  L-o-
 
 == SYNOPSIS:
 
-irb(main):001:0> require 'lib/riak'
- => true
-irb(main):002:0> rc = Riak::Client.new
- => #<Riak::Client:0x00000100932f90 @host="127.0.0.1", @port=8087, @bucket_list=[], @buckets=[]>
-irb(main):003:0> rc.ping?
- => true
-irb(main):004:0> rc
- => #<Riak::Client:0x00000100932f90 @host="127.0.0.1", @port=8087, @bucket_list=[], @buckets=[], @rpc=#<Riak::Client::Rpc:0x00000101075988 @client=#<Riak::Client:0x00000100932f90 ...>, @req_message="\x00\x00\x00\x01\x01", @resp_message="\x00\x00\x00\x01\x02", @resp_message_code=2, @response="">>
-irb(main):005:0> rc.rpc
- => #<Riak::Client::Rpc:0x00000101075988 @client=#<Riak::Client:0x00000100932f90 @host="127.0.0.1", @port=8087, @bucket_list=[], @buckets=[], @rpc=#<Riak::Client::Rpc:0x00000101075988 ...>>, @req_message="\x00\x00\x00\x01\x01", @resp_message="\x00\x00\x00\x01\x02", @resp_message_code=2, @response="">
-irb(main):006:0> 
+  irb(main):001:0> require 'lib/riak'
+   => true
+  irb(main):002:0> rc = Riak::Client.new
+   => #<Riak::Client:0x00000100932f90 @host="127.0.0.1", @port=8087, @bucket_list=[], @buckets=[]>
+  irb(main):003:0> rc.ping?
+   => true
+  irb(main):004:0> rc
+   => #<Riak::Client:0x00000100932f90 @host="127.0.0.1", @port=8087, @bucket_list=[], @buckets=[], @rpc=#<Riak::Client::Rpc:0x00000101075988 @client=#<Riak::Client:0x00000100932f90 ...>, @req_message="\x00\x00\x00\x01\x01", @resp_message="\x00\x00\x00\x01\x02", @resp_message_code=2, @response="">>
+  irb(main):005:0> rc.rpc
+   => #<Riak::Client::Rpc:0x00000101075988 @client=#<Riak::Client:0x00000100932f90 @host="127.0.0.1", @port=8087, @bucket_list=[], @buckets=[], @rpc=#<Riak::Client::Rpc:0x00000101075988 ...>>, @req_message="\x00\x00\x00\x01\x01", @resp_message="\x00\x00\x00\x01\x02", @resp_message_code=2, @response="">
+  irb(main):006:0> 
+
+-----
+
+  >> getreq = Riak::RpbGetReq.new
+   => bucket: nil
+  key: nil
+
+  >> getreq.bucket = "goog"
+   => "goog"
+  >> getreq.key = "2005-02-11"
+   => "2005-02-11"
+  >> resp = rc.rpc.request Util::MessageCode::GET_REQUEST, getreq, Riak::RpbGetResp
+  NameError: uninitialized constant Util
+  	from (irb):9
+  	from /usr/bin/irb:12:in `<main>'
+  >> resp = rc.rpc.request Riak::Util::MessageCode::GET_REQUEST, getreq, Riak::RpbGetResp
+   => content {
+    value: "{\"Date\":\"2005-02-11\",\"Open\":186.66,\"High\":192.32,\"Low\":186.07,\"Close\":187.40,\"Volume\":13116000,\"Adj. Close\":187.40}"
+    content_type: "application/json"
+    vtag: "MI6XwqUBWuyakx2K2MQjQ"
+    last_mod: 1274645879
+    last_mod_usecs: 33954
+  }
+  vclock: "k\xCEa```\xCC`\xCA\x05R,\xCC\x8Fw\x84d0%2\xE6\xB12\x94s\xE6\x1D\xE5\xCB\x02\x00"
+
+  >> 
+
 
   FIX (code sample of usage)
 

@@ -1,3 +1,6 @@
+# Copyright 2010, Scott Gonyea
+#
+#                     Shamelessly lifted from:
 # Copyright 2010 Sean Cribbs, Sonian Inc., and Basho Technologies, Inc.
 #
 #    Licensed under the Apache License, Version 2.0 (the "License");
@@ -18,93 +21,65 @@ module Riak
   # Parent class of all object types supported by ripple. {Riak::RObject} represents
   # the data and metadata stored in a bucket/key pair in the Riak database.
   class RiakObject
-    include Util
     include Util::Translation
-    include Util::Escape
-
-    # @return [Bucket] the bucket in which this object is contained
-    attr_accessor :bucket
-
-    # @return [String] the key of this object within its bucket
-    attr_accessor :key
-
-    # @return [String] the MIME content type of the object
-    attr_accessor :content_type
-
+    
     # @return [String] the Riak vector clock for the object
     attr_accessor :vclock
     alias_attribute :vector_clock, :vclock
-
-    # @return [Object] the data stored in Riak at this object's key. Varies in format by content-type, defaulting to String from the response body.
-    attr_accessor :data
-
+    
+    # @return [String] the 'value' attribute of the RpbContent protocol buffer message
+    attr_accessor :value
+    
+    # @return [String] the MIME content type of the object
+    attr_accessor :content_type
+    
+    # @return [String] the charset of the object
+    attr_accessor :charset
+    
+    # @return [String] the content encoding of the object
+    attr_accessor :content_encoding
+    
+    # @return [String] the vtag of the object
+    attr_accessor :vtag
+    
     # @return [Set<Link>] an Set of {Riak::Link} objects for relationships between this object and other resources
     attr_accessor :links
-
+    
+    # @return [Time] the Last-Modified header from the most recent HTTP response, useful for caching and reloading
+    attr_accessor :last_mod
+    alias_attribute :last_modified, :last_mod
+    
+    # @return [Time] the Last-Modified header from the most recent HTTP response, useful for caching and reloading
+    attr_accessor :last_mod_usecs
+    alias_attribute :last_modified_usecs, :last_mod_usecs
+    
+    # @return [Hash] a hash of any user-supplied metadata, consisting of a key/value pair
+    attr_accessor :usermeta
+    alias_attribute :meta, :usermeta
+    
+    # @return [Bucket] the bucket in which this object is contained
+    attr_accessor :bucket
+    
+    # @return [String] the key of this object within its bucket
+    attr_accessor :key
+    
+    # @return [Object] the data stored in Riak at this object's key. Varies in format by content-type, defaulting to String from the response body.
+    attr_accessor :data
+    
     # @return [String] the ETag header from the most recent HTTP response, useful for caching and reloading
     attr_accessor :etag
-
-    # @return [Time] the Last-Modified header from the most recent HTTP response, useful for caching and reloading
-    attr_accessor :last_modified
-
-    # @return [Hash] a hash of any X-Riak-Meta-* headers that were in the HTTP response, keyed on the trailing portion
-    attr_accessor :meta
-
+    
     # Create a new object manually
     # @param [Bucket] bucket the bucket in which the object exists
     # @param [String] key the key at which the object resides. If nil, a key will be assigned when the object is saved.
     # @see Bucket#get
-    def initialize(bucket, key=nil)
-      @bucket, @key = bucket, key
+    def initialize(client, bucket, key=nil, data=nil)
+      @client = client
+      @bucket = bucket
+      @key    = key
+      @data   = data
       @links, @meta = Set.new, {}
       yield self if block_given?
-    end
-
-    # Load object data from an HTTP response
-    # @param [Hash] response a response from {Riak::Client::HTTPBackend}
-    def load(response)
-      extract_header(response, "location", :key) {|v| URI.unescape(v.split("/").last) }
-      extract_header(response, "content-type", :content_type)
-      extract_header(response, "x-riak-vclock", :vclock)
-      extract_header(response, "link", :links) {|v| Set.new(Link.parse(v)) }
-      extract_header(response, "etag", :etag)
-      extract_header(response, "last-modified", :last_modified) {|v| Time.httpdate(v) }
-      @meta = response[:headers].inject({}) do |h,(k,v)|
-        if k =~ /x-riak-meta-(.*)/
-          h[$1] = v
-        end
-        h
-      end
-      @conflict = response[:code].try(:to_i) == 300 && content_type =~ /multipart\/mixed/
-      @siblings = nil
-      @data = deserialize(response[:body]) if response[:body].present?
-      self
-    end
-
-    # HTTP header hash that will be sent along when storing the object
-    # @return [Hash] hash of HTTP Headers
-    def store_headers
-      {}.tap do |hash|
-        hash["Content-Type"] = @content_type
-        hash["X-Riak-Vclock"] = @vclock if @vclock
-        unless @links.blank?
-          hash["Link"] = @links.reject {|l| l.rel == "up" }.map(&:to_s).join(", ")
-        end
-        unless @meta.blank?
-          @meta.each do |k,v|
-            hash["X-Riak-Meta-#{k}"] = v.to_s
-          end
-        end
-      end
-    end
-
-    # HTTP header hash that will be sent along when reloading the object
-    # @return [Hash] hash of HTTP headers
-    def reload_headers
-      {}.tap do |h|
-        h['If-None-Match'] = @etag if @etag.present?
-        h['If-Modified-Since'] = @last_modified.httpdate if @last_modified.present?
-      end
     end
 
     # Store the object in Riak

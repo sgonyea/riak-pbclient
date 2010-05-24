@@ -1,3 +1,6 @@
+# Copyright 2010, Scott Gonyea
+#
+#                     Shamelessly lifted from:
 # Copyright 2010 Sean Cribbs, Sonian Inc., and Basho Technologies, Inc.
 #
 #    Licensed under the Apache License, Version 2.0 (the "License");
@@ -29,7 +32,7 @@ module Riak
     # @return [Hash] Internal Riak bucket properties.
     attr_reader :props
     alias_attribute :properties, :props
-
+    
     # Create a Riak bucket manually.
     # @param [Client] client the {Riak::Client} for this bucket
     # @param [String] name the name of the bucket
