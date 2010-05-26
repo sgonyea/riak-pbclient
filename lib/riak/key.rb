@@ -66,7 +66,7 @@ module Riak
       if get_response.has_field?(:content)
         self.content  = get_response.content
       else
-        @content      = Protobuf::Field::FieldArray(Riak::RiakContent.new)
+        @contents     = [Riak::RiakContent.new]
       end
       
       return(self)
