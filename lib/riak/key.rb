@@ -124,14 +124,29 @@ module Riak
     # @return [Riak::RiakContent] the RiakContent instance that was just set
     # @raise [ArgumentError] will yell at you if the supplied riak_content is not of the RiakContent class
     def content=(riak_contents)
-      raise ArgumentError, t("riak_content_type") unless riak_contents.is_a?(Protobuf::Field::FieldArray)
+      case riak_contents.class
+      if riak_contents.is_a?(Protobuf::Field::FieldArray)
+        raise NoContentError if riak_contents.empty?
+
+        @contents.clear
+        
+        riak_contents.each do |rc|
+          @contents[rc.vtag].load(rc)
+        end
+      elsif riak_contents.is_a?(Riak::RiakContent)
+        
+        @contents.clear
+        
+        @contents[riak_contents.vtag].load(riak_contents)
+        
+      elsif riak_contents.nil?
+        @contents.clear
+        
+      else
+        raise ArgumentError, t("riak_content_type")
+      end # if riak_contents
       
-      raise NoContentError if riak_contents.empty?
-      
-      riak_contents.each do |rc|
-        @contents[rc.vtag].load(rc)
-      end
-    end
+    end # def content=
     
     # "@contents" is an array of RiakContent objects, though only contains more than one in the event that
     #   there are siblings.
