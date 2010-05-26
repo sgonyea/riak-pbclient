@@ -1,6 +1,6 @@
 # Copyright 2010, Scott Gonyea
 #
-#                     Shamelessly lifted from:
+#                     Shamelessly adapted from:
 # Copyright 2010 Sean Cribbs, Sonian Inc., and Basho Technologies, Inc.
 #
 #    Licensed under the Apache License, Version 2.0 (the "License");
@@ -20,6 +20,8 @@ module Riak
   # Represents and encapsulates operations on a Riak bucket.  You may retrieve a bucket
   # using {Client#bucket}, or create it manually and retrieve its meta-information later.
   class Bucket
+    include Util::Translation
+    include Util::MessageCode
 
     # @return [Riak::Client] the associated client
     attr_reader :client
@@ -38,8 +40,8 @@ module Riak
     # @param [String] name the name of the bucket
     def initialize(client, name, options={})
       options.assert_valid_keys(:n_val, :allow_mult)
-      raise ArgumentError, t("client_type", :client => client.inspect)      unless client.is_a?(Client)
-      raise ArgumentError, t("string_type", :string => bucket_name.inspect) unless bucket_name.is_a?(String)
+      raise ArgumentError, t("client_type", :client => client.inspect)  unless client.is_a?(Client)
+      raise ArgumentError, t("string_type", :string => name.inspect)    unless name.is_a?(String)
       
       @client     = client
       @name       = name
@@ -52,134 +54,93 @@ module Riak
     # @param [RpbHash] response a response from {Riak::Client::HTTPBackend}
     # @return [Bucket] self
     # @see Client#bucket
-    def load(response={})
-      unless response.try(:[], :headers).try(:[],'content-type').try(:first) =~ /json$/
-        raise Riak::InvalidResponse.new({"content-type" => ["application/json"]}, response[:headers], t("loading_bucket", :name => name))
-      end
-      payload = ActiveSupport::JSON.decode(response[:body])
-      @keys = payload['keys'].map {|k| URI.unescape(k) }  if payload['keys']
-      @props = payload['props'] if payload['props']
-      self
+    def load(response)
+      raise ArgumentError, t("response_type") unless response.is_a?(Riak::RpbGetBucketResp)
+      
+      self.n_val      = response.props.n_val
+      self.allow_mult = response.props.allow_mult
+      
+      return(self)
     end
     
-    
-    # Accesses or retrieves a list of keys in this bucket.
-    # If a block is given, keys will be streamed through
-    # the block (useful for large buckets). When streaming,
-    # results of the operation will not be retained in the local Bucket object.
-    # @param [Hash] options extra options
-    # @yield [Array<String>] a list of keys from the current chunk
-    # @option options [Boolean] :reload (false) If present, will force reloading of the bucket's keys from Riak
+    # Accesses or retrieves a list of keys in this bucket.  Needs to have expiration / cacheing, though not now.
     # @return [Array<String>] Keys in this bucket
-    def keys(options={})
-      if block_given?
-        @client.http.get(200, @client.prefix, escape(name), {:props => false, :keys => 'stream'}, {}) do |chunk|
-          obj = ActiveSupport::JSON.decode(chunk) rescue {}
-          yield obj['keys'].map {|k| URI.unescape(k) } if obj['keys']
-        end
-      elsif @keys.nil? || options[:reload]
-        response = @client.http.get(200, @client.prefix, escape(name), {:props => false}, {})
-        load(response)
-      end
-      @keys
-    end
-
-    # Sets internal properties on the bucket
-    # Note: this results in a request to the Riak server!
-    # @param [Hash] properties new properties for the bucket
-    # @return [Hash] the properties that were accepted
-    # @raise [FailedRequest] if the new properties were not accepted by the Riak server
-    def props=(properties)
-      raise ArgumentError, t("hash_type", :hash => properties.inspect) unless Hash === properties
-      body = {'props' => properties}.to_json
-      @client.http.put(204, @client.prefix, escape(name), body, {"Content-Type" => "application/json"})
-      @props = properties
+    def keys
+      @client.keys_in @name
     end
 
     # Retrieve an object from within the bucket.
     # @param [String] key the key of the object to retrieve
-    # @param [Hash] options query parameters for the request
-    # @option options [Fixnum] :r - the read quorum for the request - how many nodes should concur on the read
-    # @return [Riak::RObject] the object
-    # @raise [FailedRequest] if the object is not found or some other error occurs
-    def get(key, options={})
-      code = allow_mult ? [200,300] : 200
-#      response = @client.http.get(code, @client.prefix, escape(name), escape(key), options, {})
-      RObject.new(self, key).load(response)
+    # @param [Fixnum] quorum - the read quorum for the request - how many nodes should concur on the read
+    # @return [Riak::Key] the object
+    def key(key, quorum=nil)
+      raise ArgumentError, t("quorum_invalid")    unless quorum.is_a?(Fixnum) or quorum.is_a?(NilClass)
+      raise ArgumentError, t("key_name_invalid")  unless key.is_a?(String)
+      
+      response = @client.get_request @name, key, quorum
+      
+      Riak::Key.new(self, key, response)
     end
-    alias :[] :get
-
-    # Create a new blank object
-    # @param [String] key the key of the new object
-    # @return [RObject] the new, unsaved object
-    def new(key=nil)
-      RiakObject.new(self, key).tap do |obj|
-        obj.content_type = "application/json"
-      end
+    alias :[] :key
+    
+    # Retrieve an object from within the bucket.  Will raise an error message if key does not exist.
+    # @param [String] key the key of the object to retrieve
+    # @param [Fixnum] quorum - the read quorum for the request - how many nodes should concur on the read
+    # @return [Riak::Key] the object
+    def key!(key, quorum=nil)
+      raise ArgumentError, t("key_name_invalid") unless key.is_a?(String)
+      raise ArgumentError, t("quorum_invalid") unless quorum.is_a?(Fixnum)
+      
+      response = @client.get_request @name, key, quorum
+      
+      Riak::Key.new(self, key).load!(response)
     end
-
-    # Fetches an object if it exists, otherwise creates a new one with the given key
-    # @param [String] key the key to fetch or create
-    # @return [RObject] the new or existing object
-    def get_or_new(key, options={})
-      begin
-        get(key, options)
-#      rescue Riak::FailedRequest => fr
-#        if fr.code.to_i == 404
-#          new(key)
-#        else
-#          raise fr
-#        end
-      end
-    end
-
-    # Checks whether an object exists in Riak.
-    # @param [String] key the key to check
-    # @param [Hash] options quorum options
-    # @option options [Fixnum] :r - the read quorum value for the request (R)
-    # @return [true, false] whether the key exists in this bucket
-    def exists?(key, options={})
-#      result = client.http.head([200,404], client.prefix, escape(name), escape(key), options, {})
-#      result[:code] == 200
-    end
-    alias :exist? :exists?
-
+    
     # Deletes a key from the bucket
     # @param [String] key the key to delete
     # @param [Hash] options quorum options
     # @option options [Fixnum] :rw - the read/write quorum for the delete
     def delete(key, options={})
-      client.http.delete([204,404], client.prefix, escape(name), escape(key), options, {})
+#      client.http.delete([204,404], client.prefix, escape(name), escape(key), options, {})
     end
 
     # @return [true, false] whether the bucket allows divergent siblings
     def allow_mult
-      props['allow_mult']
+      @allow_mult
     end
 
     # Set the allow_mult property.  *NOTE* This will result in a PUT request to Riak.
     # @param [true, false] value whether the bucket should allow siblings
     def allow_mult=(value)
-      self.props = {'allow_mult' => value}
-      value
+      return(@allow_mult = value) if value.is_a?(TrueClass)
+      return(@allow_mult = value) if value.is_a?(FalseClass)
+      
+      raise ArgumentError, t("allow_mult_invalid")
     end
 
     # @return [Fixnum] the N value, or number of replicas for this bucket
-    def n_value
-      props['n_val']
+    def n_val
+      @n_val
     end
 
     # Set the N value (number of replicas). *NOTE* This will result in a PUT request to Riak.
     # Setting this value after the bucket has objects stored in it may have unpredictable results.
     # @param [Fixnum] value the number of replicas the bucket should keep of each object
-    def n_value=(value)
-      self.props = {'n_val' => value}
-      value
+    def n_val=(value)
+      raise ArgumentError, t("allow_mult_invalid") unless value.is_a?(Fixnum)
+      
+      @n_val = value
     end
 
     # @return [String] a representation suitable for IRB and debugging output
-#    def inspect
-#      "#<Riak::Bucket #{client.http.path(client.prefix, escape(name)).to_s}#{" keys=[#{keys.join(',')}]" if defined?(@keys)}>"
-#    end
+    def inspect
+      "#<Riak::Bucket name=#{@name}, props={n_val=>#{@n_val}, allow_mult=#{@allow_mult}}>"
+    end
+    
+    # @return [String] a representation suitable for IRB and debugging output, including keys within this bucket
+    def inspect!
+      "#<Riak::Bucket name=#{@name}, props={n_val=>#{@n_val}, allow_mult=#{@allow_mult}}, keys=#{keys.inspect}>"
+    end
+    
   end
 end

@@ -33,7 +33,7 @@ module Riak
       # @param [Client] the Riak::Client object in which this Rpc instance lives
       def initialize(client)
         @client             = client
-        @client_id          = request(Riak::Util::MessageCode::GET_CLIENT_ID_REQUEST,
+        @client_id          = request(Util::MessageCode::GET_CLIENT_ID_REQUEST,
                                       nil,
                                       Riak::RpbGetClientIdResp
                               ).client_id
@@ -71,7 +71,7 @@ module Riak
       # @param [TCPSocket] socket connection for which the Client ID will be set
       # @return [True/False] whether or not the set client id request succeeded
       def set_client_id(socket)
-        @set_c_id_req     ||= assemble_request( Riak::Util::MessageCode::SET_CLIENT_ID_REQUEST,
+        @set_c_id_req     ||= assemble_request( Util::MessageCode::SET_CLIENT_ID_REQUEST,
                                                 @set_client_id.serialize_to_string)
 
         socket.send(@set_c_id_req, 0)
@@ -79,7 +79,7 @@ module Riak
         
         resp_code, resp_msg = decode_message(set_c_id_resp)
         
-        return resp_code == Riak::Util::MessageCode::SET_CLIENT_ID_RESPONSE
+        return resp_code == Util::MessageCode::SET_CLIENT_ID_RESPONSE
       end
       
       # Sends the request to the riak node

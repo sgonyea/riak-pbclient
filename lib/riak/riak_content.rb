@@ -24,10 +24,6 @@ module Riak
     include Util::Translation
     include Util::MessageCode
     
-    # @return [String] the Riak vector clock for the object
-    attr_accessor   :vclock
-    alias_attribute :vector_clock, :vclock
-    
     # @return [String] the data stored in Riak at this object's key.  Varies in format by content-type.
     attr_accessor   :value
     alias_attribute :data, :value
@@ -61,49 +57,48 @@ module Riak
     
     # Create a new riak_content object manually
     # @see Key#content
-    def initialize(options={})
-      options.assert_valid_keys(:value, :data, :content_type, :charset, :content_encoding)
+    def initialize(contents={})
+#      options.assert_valid_keys(:value, :data, :content_type, :charset, :content_encoding)
       
-      @value            = options[:value]
-      @value          ||= options[:data]
-      @charset          = options[:charset]
-      @content_type     = options[:content_type]
-      @content_encoding = options[:content_encoding]
+      @value            = contents[:value]
+      @value          ||= contents[:data]
+      @charset          = contents[:charset]
+      @content_type     = contents[:content_type]
+      @content_encoding = contents[:content_encoding]
       
       @links, @meta = Set.new, {}
       yield self if block_given?
     end
-
-    # Delete the object from Riak and freeze this instance.  Will work whether or not the object actually
-    # exists in the Riak database.
-    def delete
-      return if key.blank?
-      @bucket.delete(key)
-      freeze
-    end
-
-    # @return [true,false] Whether this object has conflicting sibling objects (divergent vclocks)
-    def conflict?
-      @conflict.present?
+    
+    def load(contents)
+      raise ArgumentError, t("riak_content_type") unless contents.is_a?(Riak::RpbContent)
+      
+      @value            = contents[:value]
+      @content_type     = contents[:content_type]
+      @charset          = contents[:charset]
+      @content_encoding = contents[:content_encoding]
+      @vtag             = contents[:vtag]
+#      self.links        = contents[:links]
+      @last_mod         = contents[:last_mod]
+      @last_mod_usecs   = contents[:last_mod_usecs]
+#      self.usermeta     = contents[:usermeta]
+      
     end
 
     # @return [String] A representation suitable for IRB and debugging output
-#    def inspect
-#      "#<#{self.class.name} [#{@content_type}]:#{@data.inspect}>"
-#    end
-
-    def expose_attribute(rpb_content, attr_name)
-      create_method("#{attr_name}")   do
-        return(rpb_content[attr_name])
-      end
-      
-      create_method("#{attr_name}=")  do |value|
-        rpb_content[attr_name] = value
-      end
-    end # expose_attribute
-    
-    def create_method(name, &block)
-     self.class.send(:define_method, name, &block)
+    def inspect
+      "#<#Riak::RiakContent " + [
+          (@value.nil?)             ? nil : "value=#{@value.inspect}",
+          (@content_type.nil?)      ? nil : "content_type=#{@content_type.inspect}",
+          (@charset.nil?)           ? nil : "charset=#{@charset.inspect}",
+          (@content_encoding.nil?)  ? nil : "content_encoding=#{@content_encoding.inspect}",
+          (@vtag.nil?)              ? nil : "vtag=#{@vtag.inspect}",
+          (@links.nil?)             ? nil : "links=#{@links.inspect}",
+          (@last_mod.nil?)          ? nil : "last_mod=#{last_mod.inspect}",
+          (@last_mod_usecs.nil?)    ? nil : "last_mod_usecs=#{last_mod_usecs.inspect}",
+          (@usermeta.nil?)          ? nil : "usermeta=#{@usermeta.inspect}"
+          
+        ].compact.join(", ") + ">"
     end
 
     private

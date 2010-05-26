@@ -3,6 +3,10 @@ $:.unshift(File.dirname(__FILE__)) unless
 
 require 'active_support/all'
 require 'active_support/json'
+require 'active_support/core_ext'
+require 'active_support/core_ext/hash'
+require 'yaml'
+require 'base64'
 require 'riak/client_pb'
 
 module Riak
@@ -13,6 +17,8 @@ module Riak
   autoload :ClientPb,         'riak/client_pb'
   autoload :Client,           'riak/client'
   autoload :RiakContent,      'riak/riak_content'
+  autoload :Bucket,           'riak/bucket'
+  autoload :Key,              'riak/key'
 
   module Util
     autoload :Translation,    'riak/util/translation'

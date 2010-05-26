@@ -29,6 +29,15 @@ module Riak
     
       LIST_KEYS_REQUEST         = 17
       LIST_KEYS_RESPONSE        = 18
+      
+      GET_BUCKET_REQUEST        = 19
+      GET_BUCKET_RESPONSE       = 20
+      
+      SET_BUCKET_REQUEST        = 21
+      SET_BUCKET_RESPONSE       = 22
+      
+      MAP_REDUCE_REQUEST        = 23
+      MAP_REDUCE_RESPONSE       = 24
     end
   end
 end

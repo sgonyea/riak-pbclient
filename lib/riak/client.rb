@@ -56,58 +56,69 @@ module Riak
       raise ArgumentError, t("port_invalid") unless (0..65535).include?(value)
       @port = value
     end
-  
+    
     def rpc
       @rpc ||= Rpc.new(self)
     end
 
-    # Retrieves a bucket from Riak.
+    # Tests connectivity with the Riak host.
+    # @return [Boolean] Successful returned as 'true', failed connection returned as 'false'
+    def ping?
+      rpc.request Util::MessageCode::PING_REQUEST
+      
+      return rpc.resp_message_code == PING_RESPONSE
+    end
+
+    # I need bucket!  Bring me a bucket! (Retrieves a bucket from Riak.)
     # @param [String] bucket the bucket to retrieve
     # @param [Hash] options options for retrieving the bucket
     # @option options [Boolean] :keys (true) whether to retrieve the bucket keys
     # @option options [Boolean] :props (true) whether to retreive the bucket properties
     # @return [Bucket] the requested bucket
-    def get_bucket(bucket, options={})
-      options.assert_valid_keys(:keys, :props)
-      response = http.get(200, prefix, escape(bucket), options, {})
+    def bring_me_bucket(bucket, options={})
+#      options.assert_valid_keys(:keys, :props)
+#      response = http.get(200, prefix, escape(bucket), options, {})
+      request   = Riak::RpbGetBucketReq.new(:bucket => bucket)
+      response  = rpc.request(
+                    Util::MessageCode::GET_BUCKET_REQUEST,
+                    request,
+                    Riak::RpbGetBucketResp
+                  )
       Bucket.new(self, bucket).load(response)
     end
-    alias :[] :get_bucket
+    alias :[]     :bring_me_bucket
+    alias :bucket :bring_me_bucket
     
-    # Retrieves a key, stored in the given bucket, from Riak.
+    # Retrieves a key, using RpbGetReq, from within a given bucket, from Riak.
     # @param [String] bucket the bucket from which to retrieve the key
     # @param [String] key the name of the key to be received
-    # @param [Hash] options options for retrieving the key
-    # @option options [Boolean] :props (true) whether to retreive the bucket properties
-    # @return [Key] the requested key
-    def get_key(bucket, key, options={})
-      options.assert_valid_keys(:props)
-      response = http.get(200, prefix, escape(name), options, {})
-      Key.new(self, name).load(response)
+    # @param [Fixnum] quorum read quorum- num of replicas need to agree when retrieving the object
+    # @return [RpbGetResp] the response in which the given Key is stored
+    def get_request(bucket, key, quorum=nil)
+      request   = Riak::RpbGetReq.new({:bucket => bucket, :key => key})
+      request.r = quorum if quorum.is_a?(Fixnum)
+      
+      response  = rpc.request(
+                    Util::MessageCode::GET_REQUEST,
+                    request,
+                    Riak::RpbGetResp
+                  )
+      
+      return(response)
     end
+    alias :req :get_request
+    alias :get :get_request
     
     # @return [String] A representation suitable for IRB and debugging output.
 #      def inspect
 #        "#<Client >"
 #      end
-
-    # Tests connectivity with the Riak host.
-    # @return [Boolean] Successful returned as 'true', failed connection returned as 'false'
-    def ping?
-      rpc.request PING_REQUEST
-      
-      return rpc.resp_message_code == PING_RESPONSE
-    end
-    
-#    def get
-#      
-#    end
     
     # Lists the buckets found in the Riak database
     # @raise [ReturnRespError] if the message response does not correlate with the message requested
     # @return [Array] list of buckets (String)
-    def list_buckets
-      rpc.request LIST_BUCKETS_REQUEST, nil, RpbListBucketsResp
+    def buckets
+      rpc.request Util::MessageCode::LIST_BUCKETS_REQUEST, nil, RpbListBucketsResp
       
       raise ReturnRespError,
         t("response_incorrect") if rpc.resp_message_code != LIST_BUCKETS_RESPONSE
@@ -117,23 +128,21 @@ module Riak
     end
     
     # Lists the keys within their respective buckets, that are found in the Riak database
+    # @param [String] bucket the bucket from which to retrieve the list of keys
     # @raise [ReturnRespError] if the message response does not correlate with the message requested
     # @return [Hash] Mapping of the buckets (String) to their keys (Array of Strings)
-    def list_keys
-      @_bucket_keys.clear
+    def keys_in(bucket)
       
-      @_buckets.each do |bucket|
-        list_keys_request   = RpbListKeysReq.new(:bucket => bucket)
-        
-        rpc.request LIST_KEYS_REQUEST, list_keys_request, RpbListKeysResp
-        
-        raise ReturnRespError,
-          t("response_incorrect") if rpc.resp_message_code != LIST_KEYS_RESPONSE
-        
-        @_bucket_keys[bucket] = rpc.response.keys.each{|b| b}
-      end
+      list_keys_request = RpbListKeysReq.new(:bucket => bucket)
       
-      @_bucket_keys
+      rpc.request Util::MessageCode::LIST_KEYS_REQUEST,
+                  list_keys_request,
+                  Riak::RpbListKeysResp
+      
+      raise ReturnRespError,
+        t("response_incorrect") if rpc.resp_message_code != Util::MessageCode::LIST_KEYS_RESPONSE
+      
+      return(rpc.response.keys.each{|k| k})
     end
 
     private
