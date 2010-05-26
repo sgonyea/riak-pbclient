@@ -1,15 +1,18 @@
 $:.unshift(File.dirname(__FILE__)) unless
   $:.include?(File.dirname(__FILE__)) || $:.include?(File.expand_path(File.dirname(__FILE__)))
 
+require 'active_support/all'
+require 'active_support/json'
 require 'riak/client_pb'
 
 module Riak
   VERSION = '0.0.1'
   
   # Domain objects
+  autoload :I18n,             'riak/i18n'
   autoload :ClientPb,         'riak/client_pb'
   autoload :Client,           'riak/client'
-  autoload :I18n,             'riak/i18n'
+  autoload :RiakContent,      'riak/riak_content'
 
   module Util
     autoload :Translation,    'riak/util/translation'

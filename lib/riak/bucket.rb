@@ -19,36 +19,37 @@ require 'riak'
 module Riak
   # Represents and encapsulates operations on a Riak bucket.  You may retrieve a bucket
   # using {Client#bucket}, or create it manually and retrieve its meta-information later.
-  class Bucket < Riak::RiakObject
+  class Bucket
 
     # @return [Riak::Client] the associated client
     attr_reader :client
 
     # @return [String] the bucket name
-    attr_reader :bucket_name
-
-    # @return [Hash] Internal Riak bucket properties.
-    attr_reader :props
-    alias_attribute :properties, :props
+    attr_reader :name
     
-    # @return [RpbGetResp] This bucket, as seen from the moon^h^h^h^h riak node, in protocol buffer form
-    attr_reader :pb_bucket
+    # @return [Fixnum] the number of replicas for objects in this bucket
+    attr_reader :n_val
     
-    # @return [RpbGetBucketResp] This bucket's properties- also from the moon
-    attr_reader :pb_props
+    # @return [TrueClass/FalseClass] whether or not a key's siblings are to be retrieved
+    attr_reader :allow_mult
     
     # Create a Riak bucket manually.
     # @param [Client] client the {Riak::Client} for this bucket
     # @param [String] name the name of the bucket
-    def initialize(client, bucket_name)
+    def initialize(client, name, options={})
+      options.assert_valid_keys(:n_val, :allow_mult)
       raise ArgumentError, t("client_type", :client => client.inspect)      unless client.is_a?(Client)
       raise ArgumentError, t("string_type", :string => bucket_name.inspect) unless bucket_name.is_a?(String)
-      @client, @bucket_name, @props = client, bucket_name, {}
+      
+      @client     = client
+      @name       = name
+      @n_val      = options[:n_val]
+      @allow_mult = options[:allow_mult] or false
     end
 
     # Load information for the bucket from a response given by the {Riak::Client::HTTPBackend}.
     # Used mostly internally - use {Riak::Client#bucket} to get a {Bucket} instance.
-    # @param [Hash] response a response from {Riak::Client::HTTPBackend}
+    # @param [RpbHash] response a response from {Riak::Client::HTTPBackend}
     # @return [Bucket] self
     # @see Client#bucket
     def load(response={})
@@ -60,7 +61,8 @@ module Riak
       @props = payload['props'] if payload['props']
       self
     end
-
+    
+    
     # Accesses or retrieves a list of keys in this bucket.
     # If a block is given, keys will be streamed through
     # the block (useful for large buckets). When streaming,
@@ -102,7 +104,7 @@ module Riak
     # @raise [FailedRequest] if the object is not found or some other error occurs
     def get(key, options={})
       code = allow_mult ? [200,300] : 200
-      response = @client.http.get(code, @client.prefix, escape(name), escape(key), options, {})
+#      response = @client.http.get(code, @client.prefix, escape(name), escape(key), options, {})
       RObject.new(self, key).load(response)
     end
     alias :[] :get
@@ -122,12 +124,12 @@ module Riak
     def get_or_new(key, options={})
       begin
         get(key, options)
-      rescue Riak::FailedRequest => fr
-        if fr.code.to_i == 404
-          new(key)
-        else
-          raise fr
-        end
+#      rescue Riak::FailedRequest => fr
+#        if fr.code.to_i == 404
+#          new(key)
+#        else
+#          raise fr
+#        end
       end
     end
 
@@ -137,8 +139,8 @@ module Riak
     # @option options [Fixnum] :r - the read quorum value for the request (R)
     # @return [true, false] whether the key exists in this bucket
     def exists?(key, options={})
-      result = client.http.head([200,404], client.prefix, escape(name), escape(key), options, {})
-      result[:code] == 200
+#      result = client.http.head([200,404], client.prefix, escape(name), escape(key), options, {})
+#      result[:code] == 200
     end
     alias :exist? :exists?
 
@@ -176,8 +178,8 @@ module Riak
     end
 
     # @return [String] a representation suitable for IRB and debugging output
-    def inspect
-      "#<Riak::Bucket #{client.http.path(client.prefix, escape(name)).to_s}#{" keys=[#{keys.join(',')}]" if defined?(@keys)}>"
-    end
+#    def inspect
+#      "#<Riak::Bucket #{client.http.path(client.prefix, escape(name)).to_s}#{" keys=[#{keys.join(',')}]" if defined?(@keys)}>"
+#    end
   end
 end

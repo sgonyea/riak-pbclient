@@ -19,159 +19,139 @@ require 'riak'
 module Riak
   # Represents and encapsulates operations on a Riak bucket.  You may retrieve a bucket
   # using {Client#bucket}, or create it manually and retrieve its meta-information later.
-  class Key < Riak::RiakObject
+  class Key
 
     # @return [Riak::Client] the associated client
-    attr_reader :client
+    attr_reader :bucket
 
     # @return [String] the bucket name
     attr_reader :name
-
-    # @return [Hash] Internal Riak bucket properties.
-    attr_reader :props
-    alias_attribute :properties, :props
+    
+    # @return [Array<RiakContent>] From the PBC API:
+    attr_reader :contents
+    #  content - value+metadata entries for the object. If there are siblings there will be
+    #              more than one entry. If the key is not found, content will be empty.
+    #  https://wiki.basho.com/display/RIAK/PBC+API
+    
+    # @return [String] the bucket name
+    attr_reader :vclock
     
     # Create a Riak bucket manually.
-    # @param [Client] client the {Riak::Client} for this bucket
-    # @param [String] name the name of the bucket
-    def initialize(bucket, key_name)
-      raise ArgumentError, t("client_type", :client => client.inspect)  unless client.is_a?(Client)
-      raise ArgumentError, t("string_type", :string => name.inspect)    unless name.is_a?(String)
-      @client, @name, @props = client, name, {}
+    # @param [Bucket] bucket the Bucket object within which this Key exists
+    # @option options [String] name the name assigned to this Key entity
+    # @option options [Fixnum] vclock Careful! Do not set this unless you have a reason to
+    # @option options [RiakContent] content a content object, that's to be inserted in this Key
+    def initialize(bucket, options={})
+      options.assert_valid_keys(:name, :vclock, :content)
+      
+      self.bucket   = bucket
+      self.name     = options[:name]
+      self.vclock   = options[:vclock]
+      self.content  = options[:content]
     end
 
-    # Load information for the bucket from a response given by the {Riak::Client::HTTPBackend}.
-    # Used mostly internally - use {Riak::Client#bucket} to get a {Bucket} instance.
-    # @param [Hash] response a response from {Riak::Client::HTTPBackend}
-    # @return [Bucket] self
-    # @see Client#bucket
+    # Load information for the key from either the response object, Riak::RpbGetResp, or
+    #  from a Hash object that you supply yourself.
+    #
+    # Fills in the RpbContent object and the vclock value.  Notice -
+    #  This class is not forcing you to fill in the "name" attribute, but you need
+    #  to do it at some point.  If you use the handlers, it should largely be done for you.
+    #
+    # @param [RpbGetResp/Hash] response an RpbGetResp object or a Hash.
+    # @return [Key] self
     def load(response={})
-      unless response.try(:[], :headers).try(:[],'content-type').try(:first) =~ /json$/
-        raise Riak::InvalidResponse.new({"content-type" => ["application/json"]}, response[:headers], t("loading_bucket", :name => name))
-      end
-      payload = ActiveSupport::JSON.decode(response[:body])
-      @keys = payload['keys'].map {|k| URI.unescape(k) }  if payload['keys']
-      @props = payload['props'] if payload['props']
+      options.assert_valid_keys(:vclock, :content)
+      
+      self.vclock   = response[:vclock]
+      self.content  = response[:content]
+      
       self
     end
 
-    # Accesses or retrieves a list of keys in this bucket.
-    # If a block is given, keys will be streamed through
-    # the block (useful for large buckets). When streaming,
-    # results of the operation will not be retained in the local Bucket object.
-    # @param [Hash] options extra options
-    # @yield [Array<String>] a list of keys from the current chunk
-    # @option options [Boolean] :reload (false) If present, will force reloading of the bucket's keys from Riak
-    # @return [Array<String>] Keys in this bucket
-    def keys(options={})
-      if block_given?
-        @client.http.get(200, @client.prefix, escape(name), {:props => false, :keys => 'stream'}, {}) do |chunk|
-          obj = ActiveSupport::JSON.decode(chunk) rescue {}
-          yield obj['keys'].map {|k| URI.unescape(k) } if obj['keys']
-        end
-      elsif @keys.nil? || options[:reload]
-        response = @client.http.get(200, @client.prefix, escape(name), {:props => false}, {})
-        load(response)
-      end
-      @keys
-    end
-
-    # Sets internal properties on the bucket
-    # Note: this results in a request to the Riak server!
-    # @param [Hash] properties new properties for the bucket
+    # Sets the name attribute for this Key object
+    # @param [String] key_name sets the name of the Key
     # @return [Hash] the properties that were accepted
     # @raise [FailedRequest] if the new properties were not accepted by the Riak server
-    def props=(properties)
-      raise ArgumentError, t("hash_type", :hash => properties.inspect) unless Hash === properties
-      body = {'props' => properties}.to_json
-      @client.http.put(204, @client.prefix, escape(name), body, {"Content-Type" => "application/json"})
-      @props = properties
+    def name=(key_name)
+      raise ArgumentError, t("string_type") unless key_name.is_a?(String)
+      
+      warn  "name is already set to'#{@name}'; setting to '#{key_name}'.  " +
+            "Renaming is not yet supported.  May result in duplicate keys." if @name
+      
+      @name = key_name
+    end
+    
+    # Sets the vclock attribute for this Key, which was supplied by the Riak node (if you're doing it right)
+    # @param [Fixnum] vclock the vector clock
+    # @return [Fixnum] the vector clock
+    # @raise [ArgumentError] if you failed at this basic task, you'll be instructed to place your head on the keyboard
+    def vclock=(vclock)
+      raise ArgumentError, t("fixnum_type") unless vclock.is_a?(Fixnum)
+      
+      @vclock = vclock
+    end
+    
+    # Sets the content object for this Key.  I do not yet support siblings in this method and, therefore,
+    #  you may or may not destroy them if you use this and are not careful.
+    # @param [Riak::RiakContent] content a RiakContent instance that should be contained within this Key
+    # @return [Riak::RiakContent] the RiakContent instance that was just set
+    # @raise [ArgumentError] will yell at you if the supplied riak_content is not of the RiakContent class
+    def content=(riak_content)
+      raise ArgumentError, t("riak_content_type") unless riak_content.is_a?(Riak::RiakContent)
+      
+      warn  "the content within this key appears to have siblings.  " +
+            "if you're sure, please use content!" if @contents.size > 1
+      
+      @contents = [riak_content] unless @contents.size > 1
+    end
+    
+    # Sets the content object for this Key, by force.  Will override the potentially annoying warning message
+    #  regarding the existence of siblings.  Please shower me with suggestions on how to handle this.
+    # @param [Riak::RiakContent] content a RiakContent instance that should be contained within this Key
+    # @return [Riak::RiakContent] the RiakContent instance that was just set
+    # @raise [ArgumentError] if you failed at this basic task, you'll be instructed to place your head on the keyboard
+    def content!(riak_content)
+      raise ArgumentError, t("riak_content_type") unless riak_content.is_a?(Riak::RiakContent)
+      
+      @contents = [riak_content]
+    end
+    
+    # "@contents" is an array of RiakContent objects, though only contains more than one in the event that
+    #   there are siblings.
+    # @return [Riak::RiakContent] the content of this Key instance's value (ie, key/value)
+    def content
+      return(@contents[0])
+    end
+    
+    # "@contents" is an array of RiakContent objects.  This gives you that entire array.
+    # @return [Array<Riak::RiakContent>] the contents of this Key instance's value- and any of that content's siblings, if they were requested
+    def contents
+      return(@contents)
     end
 
-    # Retrieve an object from within the bucket.
-    # @param [String] key the key of the object to retrieve
-    # @param [Hash] options query parameters for the request
-    # @option options [Fixnum] :r - the read quorum for the request - how many nodes should concur on the read
-    # @return [Riak::RObject] the object
-    # @raise [FailedRequest] if the object is not found or some other error occurs
-    def get(key, options={})
-      code = allow_mult ? [200,300] : 200
-      response = @client.http.get(code, @client.prefix, escape(name), escape(key), options, {})
-      RObject.new(self, key).load(response)
-    end
-    alias :[] :get
-
-    # Create a new blank object
-    # @param [String] key the key of the new object
-    # @return [RObject] the new, unsaved object
-    def new(key=nil)
-      RObject.new(self, key).tap do |obj|
-        obj.content_type = "application/json"
-      end
-    end
-
-    # Fetches an object if it exists, otherwise creates a new one with the given key
-    # @param [String] key the key to fetch or create
-    # @return [RObject] the new or existing object
-    def get_or_new(key, options={})
-      begin
-        get(key, options)
-      rescue Riak::FailedRequest => fr
-        if fr.code.to_i == 404
-          new(key)
-        else
-          raise fr
-        end
-      end
-    end
-
-    # Checks whether an object exists in Riak.
-    # @param [String] key the key to check
-    # @param [Hash] options quorum options
-    # @option options [Fixnum] :r - the read quorum value for the request (R)
-    # @return [true, false] whether the key exists in this bucket
-    def exists?(key, options={})
-      result = client.http.head([200,404], client.prefix, escape(name), escape(key), options, {})
-      result[:code] == 200
-    end
-    alias :exist? :exists?
-
-    # Deletes a key from the bucket
-    # @param [String] key the key to delete
+    # Deletes this key from its Bucket container
     # @param [Hash] options quorum options
     # @option options [Fixnum] :rw - the read/write quorum for the delete
-    def delete(key, options={})
-      client.http.delete([204,404], client.prefix, escape(name), escape(key), options, {})
-    end
-
-    # @return [true, false] whether the bucket allows divergent siblings
-    def allow_mult
-      props['allow_mult']
-    end
-
-    # Set the allow_mult property.  *NOTE* This will result in a PUT request to Riak.
-    # @param [true, false] value whether the bucket should allow siblings
-    def allow_mult=(value)
-      self.props = {'allow_mult' => value}
-      value
-    end
-
-    # @return [Fixnum] the N value, or number of replicas for this bucket
-    def n_value
-      props['n_val']
-    end
-
-    # Set the N value (number of replicas). *NOTE* This will result in a PUT request to Riak.
-    # Setting this value after the bucket has objects stored in it may have unpredictable results.
-    # @param [Fixnum] value the number of replicas the bucket should keep of each object
-    def n_value=(value)
-      self.props = {'n_val' => value}
-      value
+    def delete(options={})
+      bucket.delete(@name, options)
     end
 
     # @return [String] a representation suitable for IRB and debugging output
-    def inspect
-      "#<Riak::Bucket #{client.http.path(client.prefix, escape(name)).to_s}#{" keys=[#{keys.join(',')}]" if defined?(@keys)}>"
+#    def inspect
+#      "#<Riak::Key #{" keys=[#{keys.join(',')}]" if defined?(@keys)}>"
+#    end
+    
+    private
+    
+    # Sets the name attribute for this Key object
+    # @param [String] key_name sets the name of the Key
+    # @return [Hash] the properties that were accepted
+    # @raise [FailedRequest] if the new properties were not accepted by the Riak server
+    def bucket=(bucket)
+      raise ArgumentError, t("bucket_type") unless bucket.is_a?(Riak::Bucket)
+      
+      @bucket ||= bucket
     end
-  end
-end
+    
+  end # class Key
+end # module Riak

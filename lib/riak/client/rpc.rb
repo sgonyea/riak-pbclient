@@ -90,7 +90,7 @@ module Riak
       def request(mc, pb_msg=nil, pb_resp_class=nil)
         clear
         
-        raise TypeError, t("pb_message_invalid") unless 
+        raise TypeError, t("pb_message_invalid") unless
           pb_msg.is_a?(Protobuf::Message) or pb_msg.is_a?(NilClass)
         
         @response = (pb_resp_class.new rescue nil)
@@ -108,12 +108,11 @@ module Riak
         return(@response)
       end # stream_request
       
-      
       # Handles the response from the Riak node
       # @param [String] value The message returned from the Riak node over the TCP Socket
       # @return [Protobuf::Message] @response the processed response (if any) from the Riak node
       def response=(value)
-        @resp_message         = value
+        @resp_message = value
         
         @resp_message_code, response_chunk = decode_message(value)
         
