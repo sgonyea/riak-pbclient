@@ -22,7 +22,7 @@ module Riak
     include Util::Translation
     include Util::MessageCode
 
-    autoload :Rpc,      'riak/client/rpc'
+    autoload :Rpc, 'riak/client/rpc'
 
     # Regexp for validating hostnames
     #   http://rubular.com/r/N2HOgxFkN3
@@ -145,7 +145,18 @@ module Riak
       
       return(rpc.response.keys.each{|k| k})
     end
-
+    
+    
+    def rm_bucket(bucket, rw=nil)
+      
+    end
+    
+    def del_request(bucket, key, rw=nil)
+      
+    end
+    
+    
+    
     private
 
   end # class Client

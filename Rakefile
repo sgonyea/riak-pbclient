@@ -34,13 +34,8 @@ namespace :spec do
 
   desc "Run All Specs"
   Rspec::Core::RakeTask.new(:all) do |spec|
-    spec.pattern = "spec/**/*_spec.rb"
+    spec.pattern = Rake::FileList["spec/**/*_spec.rb"] #"spec/**/*_spec.rb"
   end
-end
-
-desc %{Push the gem to github}
-task :push => :gem do
-  "git push origin"
 end
 
 # TODO - want other tests/tasks run by default? Add them to the list
