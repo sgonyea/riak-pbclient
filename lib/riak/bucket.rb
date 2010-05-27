@@ -66,7 +66,13 @@ module Riak
     # Accesses or retrieves a list of keys in this bucket.  Needs to have expiration / cacheing, though not now.
     # @return [Array<String>] Keys in this bucket
     def keys
-      @client.keys_in @name
+      @keys ||= @client.keys_in @name
+    end
+    
+    # Accesses or retrieves a list of keys in this bucket.  Needs to have expiration / cacheing, though not now.
+    # @return [Array<String>] Keys in this bucket
+    def keys!
+      @keys = @client.keys_in @name
     end
 
     # Retrieve an object from within the bucket.

@@ -1,9 +1,6 @@
 require 'rubygems'
 gem 'hoe', '>= 2.1.0'
 require 'hoe'
-require 'rspec'
-require 'rspec/core'
-require 'rspec/core/rake_task'
 require 'fileutils'
 require './lib/riak'
 
@@ -19,6 +16,14 @@ $hoe = Hoe.spec 'riak' do
   self.summary              = 'riak-pcclient is a protocol buffer client for Riak--the distributed database by Basho.'
   self.url                  = 'http://github.com/aitrus/riak-pbclient'
   # self.extra_deps         = [['activesupport','>= 2.0.2']]
+end
+
+require 'rspec/core'
+require 'rspec/core/rake_task'
+
+desc "Run Unit Specs Only"
+Rspec::Core::RakeTask.new(:spec) do |spec|
+  spec.pattern = "spec/riak/**/*_spec.rb"
 end
 
 namespace :spec do

@@ -25,19 +25,19 @@ module Riak
     autoload :Rpc,      'riak/client/rpc'
 
     # Regexp for validating hostnames
-    HOST_REGEX = /^([[:alnum:]]+\.)+[[:alnum:]]+$/
+    #   http://rubular.com/r/N2HOgxFkN3
+    HOST_REGEX = /^([[:alnum:]]+(-*[[:alnum:]]+)*(\.{0,1}(([[:alnum:]]-*)*[[:alnum:]]+)+)*)+$/
 
     # Creates a client connection to Riak's Protobuf Listener
     # @param [String] options configuration options for the client
     # @param [String] host ('127.0.0.1') The host or IP address for the Riak endpoint
-    # @param [Fixnum] port (8097) The port of the Riak protobuf listener endpoint
-    def initialize(host="127.0.0.1", port=8087)
-      self.host         = host
-      self.port         = port
+    # @param [Fixnum] port (8087) The port of the Riak protobuf listener endpoint
+    def initialize(options={})
+      self.host         = options[:host]  || "127.0.0.1"
+      self.port         = options[:port]  || 8087
       @_buckets         = []
-      @_bucket_keys     = Hash.new{|k,v| k[v] = []}
     end
-    attr_reader :host, :port, :buckets, :_buckets, :_bucket_keys
+    attr_reader :host, :port, :buckets, :_buckets
 
     # Set the hostname of the Riak endpoint. Must be an IPv4, IPv6, or valid hostname
     # @param [String] value The host or IP address for the Riak endpoint
@@ -56,7 +56,9 @@ module Riak
       raise ArgumentError, t("port_invalid") unless (0..65535).include?(value)
       @port = value
     end
-    
+
+    # Establish a connection to the riak node, and store the Rpc instance
+    # @return [Riak::Client::Rpc] the Rpc instance that handles connections to the riak node
     def rpc
       @rpc ||= Rpc.new(self)
     end
@@ -73,7 +75,6 @@ module Riak
     # @param [String] bucket the bucket to retrieve
     # @param [Hash] options options for retrieving the bucket
     # @option options [Boolean] :keys (true) whether to retrieve the bucket keys
-    # @option options [Boolean] :props (true) whether to retreive the bucket properties
     # @return [Bucket] the requested bucket
     def bring_me_bucket(bucket, options={})
 #      options.assert_valid_keys(:keys, :props)
@@ -149,3 +150,4 @@ module Riak
 
   end # class Client
 end # module Riak
+
