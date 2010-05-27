@@ -14,8 +14,8 @@ Hoe.plugin :newgem
 # Generate all the Rake tasks
 # Run 'rake -T' to see list of generated tasks (from gem root directory)
 $hoe = Hoe.spec 'riak' do
-  self.developer              'Scott Gonyea', 'gonyea@gmail.com'
-  self.rubyforge_name       = self.name
+  self.developer              'Scott Gonyea', 'me@sgonyea.com'
+#  self.rubyforge_name       = self.name
   self.summary              = 'riak-pcclient is a protocol buffer client for Riak--the distributed database by Basho.'
   self.url                  = 'http://github.com/aitrus/riak-pbclient'
   # self.extra_deps         = [['activesupport','>= 2.0.2']]

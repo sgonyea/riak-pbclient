@@ -124,7 +124,7 @@ module Riak
     # @return [Riak::RiakContent] the RiakContent instance that was just set
     # @raise [ArgumentError] will yell at you if the supplied riak_content is not of the RiakContent class
     def content=(riak_contents)
-      case riak_contents.class
+      
       if riak_contents.is_a?(Protobuf::Field::FieldArray)
         raise NoContentError if riak_contents.empty?
 

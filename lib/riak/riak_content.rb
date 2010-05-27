@@ -66,7 +66,7 @@ module Riak
       @content_type     = contents[:content_type]
       @content_encoding = contents[:content_encoding]
       
-      @links, @meta = Set.new, {}
+      @links, @meta     = Set.new, {}
       yield self if block_given?
     end
     
