@@ -39,6 +39,7 @@ module Riak
         # Request / Response Data
         @resp_message_code  = -1
         @resp_message       = ''
+        @req_message_code   = -1
         @req_message        = ''
         @response           = ''
       end
@@ -47,6 +48,7 @@ module Riak
       def clear
         @resp_message_code  = -1
         @resp_message       = ''
+        @req_message_code   = -1
         @req_message        = ''
         @response           = ''
       end
@@ -86,8 +88,9 @@ module Riak
       # @return [True/False] whether or not the set client id request succeeded
       def request(mc, pb_msg=nil)
         clear
-
-        @response = RESPONSE_CLASS_FOR[mc].new unless RESPONSE_CLASS_FOR[mc].nil?
+        
+        @req_message_code = mc
+        @response         = RESPONSE_CLASS_FOR[mc].new unless RESPONSE_CLASS_FOR[mc].nil?
 
         with_socket do |socket|
           begin
@@ -109,6 +112,14 @@ module Riak
         @resp_message = value
 
         @resp_message_code, response_chunk = decode_message(value)
+        
+        if @resp_message_code.equal?(ERROR_RESPONSE)
+          raise FailedRequest.new(MC_RESPONSE_FOR[@req_message_code], @resp_message_code, response_chunk)
+        end
+
+        if @resp_message_code != MC_RESPONSE_FOR[@req_message_code]
+          raise FailedExchange.new(MC_RESPONSE_FOR[@req_message_code], @resp_message_code, response_chunk)
+        end
 
         if response_chunk.size > 0
           @response.parse_from_string response_chunk

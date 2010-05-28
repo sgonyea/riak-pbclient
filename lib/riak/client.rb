@@ -135,9 +135,6 @@ module Riak
     def buckets
       rpc.request Util::MessageCode::LIST_BUCKETS_REQUEST
       
-      raise ReturnRespError,
-        t("response_incorrect") if rpc.resp_message_code != LIST_BUCKETS_RESPONSE
-      
       # iterate through each of the Strings in the Bucket list, returning an array of String(s)
       @_buckets = rpc.response.buckets.each{|b| b}
     end
@@ -150,11 +147,7 @@ module Riak
       
       list_keys_request = RpbListKeysReq.new(:bucket => bucket)
       
-      rpc.request Util::MessageCode::LIST_KEYS_REQUEST,
-                  list_keys_request
-      
-      raise ReturnRespError,
-        t("response_incorrect") if rpc.resp_message_code != Util::MessageCode::LIST_KEYS_RESPONSE
+      rpc.request Util::MessageCode::LIST_KEYS_REQUEST, list_keys_request
       
       return(rpc.response.keys.each{|k| k})
     end

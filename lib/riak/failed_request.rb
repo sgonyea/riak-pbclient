@@ -14,19 +14,20 @@
 require 'riak'
 
 module Riak
-  module Util
+  # Exception raised when the expected response code from Riak
+  # fails to match the actual response code.
+  class FailedRequest < StandardError
+    include Util::Translation
+    # @return [Fixnum] the expected response code
+    attr_reader :expected
+    # @return [Fixnum] the received response code
+    attr_reader :code
+    # @return [String] the response body, if present
+    attr_reader :body
 
-    module Decode
-
-      def decode_message(message)
-        msg_len = message[0..3].unpack('N')[0]
-
-        raise ResponseError t('response_size_mismatch') if((msg_len + 4) != message.size)
-
-        message[4..(message.length-1)].unpack("ca#{msg_len-1}")
-      end
-
-    end # module Decode
+    def initialize(expected_code, response_code, body)
+      @exp_mc, @resp_mc, @msg = expected_code, response_code, body
+      super t("bug_found", :exp_mc => @expected, :resp_mc => @resp_mc, :msg => @msg.inspect)
+    end
   end
 end
-

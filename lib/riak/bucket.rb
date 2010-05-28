@@ -45,8 +45,8 @@ module Riak
       
       @client     = client
       @name       = name
-      @n_val      = options[:n_val]
-      @allow_mult = options[:allow_mult] or false
+      @n_val      = options[:n_val]       || nil
+      @allow_mult = options[:allow_mult]  || nil
     end
 
     # Load information for the bucket from a response given by the {Riak::Client::HTTPBackend}.
@@ -77,14 +77,14 @@ module Riak
 
     # Retrieve an object from within the bucket.
     # @param [String] key the key of the object to retrieve
-    # @param [Fixnum] quorum - the read quorum for the request - how many nodes should concur on the read
+    # @param [Fixnum] r - the read quorum for the request - how many nodes should concur on the read
     # @return [Riak::Key] the object
-    def key(key, quorum=nil)
-      raise ArgumentError, t("quorum_invalid")    unless quorum.is_a?(Fixnum) or quorum.is_a?(NilClass)
-      raise ArgumentError, t("key_name_invalid")  unless key.is_a?(String)
-      
-      response = @client.get_request @name, key, quorum
-      
+    def key(key, r=nil)
+      raise ArgumentError, t("fixnum_invalid", :num => r)       unless r.is_a?(Fixnum) or r.is_a?(NilClass)
+      raise ArgumentError, t("string_invalid", :string => key)  unless key.is_a?(String)
+
+      response = @client.get_request @name, key, r
+
       Riak::Key.new(self, key, response)
     end
     alias :[] :key
@@ -93,11 +93,11 @@ module Riak
     # @param [String] key the key of the object to retrieve
     # @param [Fixnum] quorum - the read quorum for the request - how many nodes should concur on the read
     # @return [Riak::Key] the object
-    def key!(key, quorum=nil)
-      raise ArgumentError, t("key_name_invalid") unless key.is_a?(String)
-      raise ArgumentError, t("quorum_invalid") unless quorum.is_a?(Fixnum)
+    def key!(key, r=nil)
+      raise ArgumentError, t("string_invalid", :string  => key) unless key.is_a?(String)
+      raise ArgumentError, t("fixnum_invalid", :num     => r)   unless r.is_a?(Fixnum)
       
-      response = @client.get_request @name, key, quorum
+      response = @client.get_request @name, key, r
       
       Riak::Key.new(self, key).load!(response)
     end
@@ -118,10 +118,9 @@ module Riak
     # Set the allow_mult property.  *NOTE* This will result in a PUT request to Riak.
     # @param [true, false] value whether the bucket should allow siblings
     def allow_mult=(value)
-      return(@allow_mult = value) if value.is_a?(TrueClass)
-      return(@allow_mult = value) if value.is_a?(FalseClass)
-      
-      raise ArgumentError, t("allow_mult_invalid")
+      return(@allow_mult = value) if value.is_a?(TrueClass) or value.is_a?(FalseClass)
+
+      raise ArgumentError, t("boolean_type")
     end
 
     # @return [Fixnum] the N value, or number of replicas for this bucket
@@ -129,11 +128,11 @@ module Riak
       @n_val
     end
 
-    # Set the N value (number of replicas). *NOTE* This will result in a PUT request to Riak.
-    # Setting this value after the bucket has objects stored in it may have unpredictable results.
+    # Set the N value (number of replicas).
+    # Saving this value after the bucket has objects stored in it may have unpredictable results.
     # @param [Fixnum] value the number of replicas the bucket should keep of each object
     def n_val=(value)
-      raise ArgumentError, t("allow_mult_invalid") unless value.is_a?(Fixnum)
+      raise ArgumentError, t("fixnum_type", :value => value) unless value.is_a?(Fixnum)
       
       @n_val = value
     end

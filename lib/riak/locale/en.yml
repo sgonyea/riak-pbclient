@@ -16,7 +16,8 @@ en:
     client_type: "invalid argument {{client}} is not a Riak::Client"
     string_type: "invalid_argument {{string}} is not a String"
     loading_bucket: "while loading bucket '{{name}}'"
-    failed_request: "Expected {{expected}} from Riak but received {{code}}. {{body}}"
+    failed_request: "Expected message code {{exp_mc}} from Riak but received {{resp_mc}}. {{msg}}"
+    failed_rx: "you have probably discovered a bug; please report this to me@sgonyea.com.  {{failed_request}}"
     hash_type: "invalid argument {{hash}} is not a Hash"
     path_and_body_required: "You must supply both a resource path and a body."
     request_body_type: "Request body must be a string or IO."
@@ -35,3 +36,8 @@ en:
     content_type_undefined: "content_type is not defined!"
     too_few_arguments: "too few arguments: {{params}}"
     wrong_argument_count_walk_spec: "wrong number of arguments (one Hash or bucket,tag,keep required)"
+    boolean_type: "invalid_argument {{value}} is not true or false"
+    fixnum_type: "invalid_argument {{value}} must be an integer"
+    error_response: "the riak node responded with an error message code"
+    
+    

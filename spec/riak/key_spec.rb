@@ -11,22 +11,8 @@
 #    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #    See the License for the specific language governing permissions and
 #    limitations under the License.
-require 'riak'
+require File.expand_path("../spec_helper", File.dirname(__FILE__))
 
-module Riak
-  module Util
-
-    module Decode
-
-      def decode_message(message)
-        msg_len = message[0..3].unpack('N')[0]
-
-        raise ResponseError t('response_size_mismatch') if((msg_len + 4) != message.size)
-
-        message[4..(message.length-1)].unpack("ca#{msg_len-1}")
-      end
-
-    end # module Decode
-  end
-end
-
+describe Riak::Key do
+  
+end # Riak::Key
