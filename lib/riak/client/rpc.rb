@@ -74,7 +74,7 @@ module Riak
                                                 @set_client_id.serialize_to_string)
 
         socket.send(@set_c_id_req, 0)
-        set_c_id_resp       = socket.recv(2000)
+        set_c_id_resp       = socket.recv(20000)
 
         resp_code, resp_msg = decode_message(set_c_id_resp)
 
@@ -118,7 +118,7 @@ module Riak
         end
 
         if @resp_message_code != MC_RESPONSE_FOR[@req_message_code]
-          raise FailedExchange.new(MC_RESPONSE_FOR[@req_message_code], @resp_message_code, response_chunk)
+          raise FailedExchange.new(MC_RESPONSE_FOR[@req_message_code], @resp_message_code, response_chunk, "failed_request")
         end
 
         if response_chunk.size > 0

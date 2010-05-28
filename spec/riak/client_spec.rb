@@ -113,16 +113,16 @@ describe Riak::Client do
     end # describe "basic communication with riak node"
 
     describe "bucket operations and retrieval" do
-      it "should send a request to list available bucket names and return an Array" do
-        @client.buckets.should be_kind_of(Array)
+      it "should send a request to list available bucket names and return a Protobuf::Field::FieldArray" do
+        @client.buckets.should be_kind_of(Protobuf::Field::FieldArray)
       end
       
       it "should send a request with the bucket name and return a Riak::Bucket" do
         @client.bucket("goog").should be_kind_of(Riak::Bucket)
       end
       
-      it "should send a request to list keys within a bucket and return an Array" do
-        @client.keys_in("goog").should be_kind_of(Array)
+      it "should send a request to list keys within a bucket and return a Protobuf::Field::FieldArray" do
+        @client.keys_in("goog").should be_kind_of(Protobuf::Field::FieldArray)
       end
     end # describe "bucket operations and retrieval"
     

@@ -20,8 +20,16 @@ module Riak
 
       def decode_message(message)
         msg_len = message[0..3].unpack('N')[0]
+        msgsize = message.size
 
-        raise ResponseError t('response_size_mismatch') if((msg_len + 4) != message.size)
+        if((msg_len + 4) != msgsize)
+          puts "-------"
+          puts "msg_len: #{msg_len}"
+          puts "msgsize: #{msgsize}"
+          puts "#{message.inspect}"
+          puts "-------"
+          raise FailedExchange.new((msg_len + 4), msgsize, message, "decode_error")
+        end
 
         message[4..(message.length-1)].unpack("ca#{msg_len-1}")
       end

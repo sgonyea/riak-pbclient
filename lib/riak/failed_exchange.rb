@@ -18,17 +18,16 @@ module Riak
   # fails to match the actual response code.
   class FailedExchange < StandardError
     include Util::Translation
-    # @return [Fixnum] the expected response code
-    attr_reader :expected
-    # @return [Fixnum] the received response code
-    attr_reader :code
-    # @return [String] the response body, if present
-    attr_reader :body
 
-    def initialize(expected_code, response_code, body)
-      @exp_mc, @resp_mc, @msg = expected_code, response_code, body
-      super t("failed_rx", :failed_request => 
-                t("failed_request", :exp_mc => @expected, :resp_mc => @resp_mc, :msg => @msg.inspect)
+    attr_reader :expected
+    attr_reader :actual
+    attr_reader :message
+    attr_reader :stub
+
+    def initialize(expected, actual, message, stub)
+      @expected, @actual, @message, @stub = expected, actual, message, stub
+      super t("failed_rx", :failure => 
+                t(@stub, :expected => @expected, :actual => @resp_mc, :message => @msg.inspect)
             )
     end
   end

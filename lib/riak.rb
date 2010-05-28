@@ -11,7 +11,7 @@ require 'riak/client_pb'
 
 module Riak
   VERSION = '0.0.1'
-  
+
   # Domain objects
   autoload :I18n,             'riak/i18n'
   autoload :Client,           'riak/client'
@@ -19,10 +19,14 @@ module Riak
   autoload :Key,              'riak/key'
   autoload :Bucket,           'riak/bucket'
 
+  # Exceptions
+  autoload :FailedRequest,    "riak/failed_request"
+  autoload :FailedExchange,   "riak/failed_exchange"
+
   module Util
     autoload :Translation,    'riak/util/translation'
+    autoload :MessageCode,    'riak/util/message_code'
     autoload :Encode,         'riak/util/encode'
     autoload :Decode,         'riak/util/decode'
-    autoload :MessageCode,    'riak/util/message_code'
   end
 end

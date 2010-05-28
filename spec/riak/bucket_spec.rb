@@ -66,7 +66,7 @@ describe Riak::Bucket do
     end
 
     it "should list the keys within the bucket" do
-      @bucket.keys.should be_kind_of(Array)
+      @bucket.keys.should be_kind_of(Protobuf::Field::FieldArray)
     end
 
     it "should return a key, when requested" do
