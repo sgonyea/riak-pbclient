@@ -100,26 +100,41 @@ describe Riak::Client do
       @client = Riak::Client.new
     end
     
-    it "should send a ping request and return true" do
-      @client.ping?.should == true
-    end
+    describe "basic communication with riak node" do
+      it "should send a ping request and return true" do
+        @client.ping?.should          == true
+      end
+      
+      it "should request the connected riak node's server info and return a Hash" do
+        # test length or content?  Need to look at what are considered acceptable values
+        @client.info[:node].should            be_kind_of(String)
+        @client.info[:server_version].should  be_kind_of(String)
+      end
+    end # describe "basic communication with riak node"
 
-    it "should send a request to list available bucket names and return an Array" do
-      @client.buckets.should be_kind_of(Array)
-    end
-
-    it "should send a request with the bucket name and return a Riak::Bucket" do
-      @client.bucket("goog").should be_kind_of(Riak::Bucket)
-    end
+    describe "bucket operations and retrieval" do
+      it "should send a request to list available bucket names and return an Array" do
+        @client.buckets.should be_kind_of(Array)
+      end
+      
+      it "should send a request with the bucket name and return a Riak::Bucket" do
+        @client.bucket("goog").should be_kind_of(Riak::Bucket)
+      end
+      
+      it "should send a request to list keys within a bucket and return an Array" do
+        @client.keys_in("goog").should be_kind_of(Array)
+      end
+    end # describe "bucket operations and retrieval"
     
-    it "should send a request to list keys within a bucket and return an Array" do
-      @client.keys_in("goog").should be_kind_of(Array)
-    end
-
-    it "should send a request for a bucket/key pair and return a Riak::RpbGetResp" do
-      @client.get_request("goog", "2010-04-12").should be_kind_of(Riak::RpbGetResp)
-    end
+    describe "key operations and retrieval" do
+      it "should send a request for a bucket/key pair and return a Riak::RpbGetResp" do
+        @client.get_request("goog", "2010-04-12").should be_kind_of(Riak::RpbGetResp)
+      end
+      
+      it "should have a vclock attribute within Riak::RpbGetResp of that is a String" do
+        @client.get_request("goog", "2010-04-12").vclock.should be_kind_of(String)
+      end
+    end # describe "key operations and retrieval"
     
-    
-  end # describe "retrieving a bucket"
+  end # describe "basic communication with riak node"
 end # Riak::Client

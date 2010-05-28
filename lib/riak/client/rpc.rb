@@ -26,26 +26,23 @@ module Riak
       include Riak::Util::Translation
       include Riak::Util::Encode
       include Riak::Util::Decode
-      
+
       attr_reader :req_message, :response, :resp_message_code, :resp_message
-      
+
       # Establishes a Client ID with the Riak node, for the life of the RPC connection.
       # @param [Client] the Riak::Client object in which this Rpc instance lives
       def initialize(client)
         @client             = client
-        @client_id          = request(Util::MessageCode::GET_CLIENT_ID_REQUEST,
-                                      nil,
-                                      Riak::RpbGetClientIdResp
-                              ).client_id
+        @client_id          = request(Util::MessageCode::GET_CLIENT_ID_REQUEST).client_id
         @set_client_id      = Riak::RpbSetClientIdReq.new(:client_id => @client_id)
-        
+
         # Request / Response Data
         @resp_message_code  = -1
         @resp_message       = ''
         @req_message        = ''
         @response           = ''
       end
-      
+
       # Clears the request / response data, in preparation for a new request
       def clear
         @resp_message_code  = -1
@@ -53,20 +50,20 @@ module Riak
         @req_message        = ''
         @response           = ''
       end
-      
+
       # Opens a TCPSocket connection with the riak host/node
       # @yield [TCPSocket] hands off the socket connection
       # @return [TCPSocket] data that was exchanged with the host/node
       def with_socket(&block)
         socket              = TCPSocket.open(@client.host, @client.port)
         set_client_id(socket) if @set_client_id
-        
+
         out                 = yield(socket)
         socket.close
-        
+
         return(out)
       end
-      
+
       # Sets the Client ID for the TCPSocket session
       # @param [TCPSocket] socket connection for which the Client ID will be set
       # @return [True/False] whether or not the set client id request succeeded
@@ -76,9 +73,9 @@ module Riak
 
         socket.send(@set_c_id_req, 0)
         set_c_id_resp       = socket.recv(2000)
-        
+
         resp_code, resp_msg = decode_message(set_c_id_resp)
-        
+
         return resp_code == Util::MessageCode::SET_CLIENT_ID_RESPONSE
       end
       
@@ -87,42 +84,39 @@ module Riak
       # @param [Protobuf::Message] pb_msg The protobuf message, if applicable, for the message code
       # @param [Protobuf::Message] pb_msg The protobuf message, if applicable, for the message code
       # @return [True/False] whether or not the set client id request succeeded
-      def request(mc, pb_msg=nil, pb_resp_class=nil)
+      def request(mc, pb_msg=nil)
         clear
-        
-        raise TypeError, t("pb_message_invalid") unless
-          pb_msg.is_a?(Protobuf::Message) or pb_msg.is_a?(NilClass)
-        
-        @response = (pb_resp_class.new rescue nil)
-        
+
+        @response = RESPONSE_CLASS_FOR[mc].new unless RESPONSE_CLASS_FOR[mc].nil?
+
         with_socket do |socket|
           begin
             @req_message  = assemble_request mc, (pb_msg.serialize_to_string rescue '')
-            
+
             socket.send(@req_message, 0)
             self.response = socket.recv(2000)
-            
+
           end while(false == (@response.done rescue true))
         end # with_socket
-        
+
         return(@response)
       end # stream_request
-      
+
       # Handles the response from the Riak node
       # @param [String] value The message returned from the Riak node over the TCP Socket
       # @return [Protobuf::Message] @response the processed response (if any) from the Riak node
       def response=(value)
         @resp_message = value
-        
+
         @resp_message_code, response_chunk = decode_message(value)
-        
+
         if response_chunk.size > 0
           @response.parse_from_string response_chunk
         end
-        
+
         return(@response)
       end
-      
+
     end # class Client
   end # module Rpc
 end # module RiakPbclient

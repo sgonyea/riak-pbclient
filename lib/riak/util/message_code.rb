@@ -38,6 +38,36 @@ module Riak
       
       MAP_REDUCE_REQUEST        = 23
       MAP_REDUCE_RESPONSE       = 24
+      
+      MC_RESPONSE_FOR           = {
+        PING_REQUEST            =>  PING_RESPONSE,
+        GET_CLIENT_ID_REQUEST   =>  GET_CLIENT_ID_RESPONSE,
+        SET_CLIENT_ID_REQUEST   =>  SET_CLIENT_ID_RESPONSE,
+        GET_SERVER_INFO_REQUEST =>  GET_SERVER_INFO_RESPONSE,
+        GET_REQUEST             =>  GET_RESPONSE,
+        PUT_REQUEST             =>  PUT_RESPONSE,
+        DEL_REQUEST             =>  DEL_RESPONSE,
+        LIST_BUCKETS_REQUEST    =>  LIST_BUCKETS_RESPONSE,
+        LIST_KEYS_REQUEST       =>  LIST_KEYS_RESPONSE,
+        GET_BUCKET_REQUEST      =>  GET_BUCKET_RESPONSE,
+        SET_BUCKET_REQUEST      =>  SET_BUCKET_RESPONSE,
+        MAP_REDUCE_REQUEST      =>  MAP_REDUCE_RESPONSE
+      }
+      
+      RESPONSE_CLASS_FOR        = {
+        PING_REQUEST            =>  nil,
+        GET_CLIENT_ID_REQUEST   =>  Riak::RpbGetClientIdResp,
+        SET_CLIENT_ID_REQUEST   =>  nil,
+        GET_SERVER_INFO_REQUEST =>  Riak::RpbGetServerInfoResp,
+        GET_REQUEST             =>  Riak::RpbGetResp,
+        PUT_REQUEST             =>  Riak::RpbPutResp,
+        DEL_REQUEST             =>  nil,
+        LIST_BUCKETS_REQUEST    =>  Riak::RpbListBucketsResp,
+        LIST_KEYS_REQUEST       =>  Riak::RpbListKeysResp,
+        GET_BUCKET_REQUEST      =>  Riak::RpbGetBucketResp,
+        SET_BUCKET_REQUEST      =>  nil,
+        MAP_REDUCE_REQUEST      =>  Riak::RpbMapRedResp
+      }
     end
   end
 end

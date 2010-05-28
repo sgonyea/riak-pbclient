@@ -14,11 +14,10 @@ module Riak
   
   # Domain objects
   autoload :I18n,             'riak/i18n'
-  autoload :ClientPb,         'riak/client_pb'
   autoload :Client,           'riak/client'
   autoload :RiakContent,      'riak/riak_content'
-  autoload :Bucket,           'riak/bucket'
   autoload :Key,              'riak/key'
+  autoload :Bucket,           'riak/bucket'
 
   module Util
     autoload :Translation,    'riak/util/translation'

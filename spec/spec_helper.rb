@@ -16,6 +16,7 @@ $LOAD_PATH.unshift(File.join(File.dirname(__FILE__), '..', 'lib'))
 
 require 'rubygems' # Use the gems path only for the spec suite
 require 'riak'
+require 'riak/util/message_code'
 require 'rspec'
 require 'rspec/autorun'
 

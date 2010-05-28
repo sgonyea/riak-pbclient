@@ -21,12 +21,22 @@ module Riak
   class Client
     include Util::Translation
     include Util::MessageCode
-
+    
     autoload :Rpc, 'riak/client/rpc'
-
+    
+    # When using integer client IDs, the exclusive upper-bound of valid values.
+    MAX_CLIENT_ID = 4294967296
+    
     # Regexp for validating hostnames
     #   http://rubular.com/r/N2HOgxFkN3
     HOST_REGEX = /^([[:alnum:]]+(-*[[:alnum:]]+)*(\.{0,1}(([[:alnum:]]-*)*[[:alnum:]]+)+)*)+$/
+    
+    attr_reader :host
+    attr_reader :port
+    attr_reader :buckets
+    attr_reader :_buckets
+    attr_reader :node
+    attr_reader :server_version
 
     # Creates a client connection to Riak's Protobuf Listener
     # @param [String] options configuration options for the client
@@ -37,7 +47,6 @@ module Riak
       self.port         = options[:port]  || 8087
       @_buckets         = []
     end
-    attr_reader :host, :port, :buckets, :_buckets
 
     # Set the hostname of the Riak endpoint. Must be an IPv4, IPv6, or valid hostname
     # @param [String] value The host or IP address for the Riak endpoint
@@ -70,20 +79,26 @@ module Riak
       
       return rpc.resp_message_code == PING_RESPONSE
     end
+    
+    def info
+      response        = rpc.request Riak::Util::MessageCode::GET_SERVER_INFO_REQUEST
 
-    # I need bucket!  Bring me a bucket! (Retrieves a bucket from Riak.)
+      @node           = response.node
+      @server_version = response.server_version
+
+      {:node => @node, :server_version => @server_version}
+    end
+
+    # I need bucket!  Bring me bucket! (Retrieves a bucket from Riak.  Eating disorder not included.)
     # @param [String] bucket the bucket to retrieve
     # @param [Hash] options options for retrieving the bucket
     # @option options [Boolean] :keys (true) whether to retrieve the bucket keys
     # @return [Bucket] the requested bucket
     def bring_me_bucket(bucket, options={})
-#      options.assert_valid_keys(:keys, :props)
-#      response = http.get(200, prefix, escape(bucket), options, {})
       request   = Riak::RpbGetBucketReq.new(:bucket => bucket)
       response  = rpc.request(
                     Util::MessageCode::GET_BUCKET_REQUEST,
-                    request,
-                    Riak::RpbGetBucketResp
+                    request
                   )
       Bucket.new(self, bucket).load(response)
     end
@@ -101,8 +116,7 @@ module Riak
       
       response  = rpc.request(
                     Util::MessageCode::GET_REQUEST,
-                    request,
-                    Riak::RpbGetResp
+                    request
                   )
       
       return(response)
@@ -119,7 +133,7 @@ module Riak
     # @raise [ReturnRespError] if the message response does not correlate with the message requested
     # @return [Array] list of buckets (String)
     def buckets
-      rpc.request Util::MessageCode::LIST_BUCKETS_REQUEST, nil, RpbListBucketsResp
+      rpc.request Util::MessageCode::LIST_BUCKETS_REQUEST
       
       raise ReturnRespError,
         t("response_incorrect") if rpc.resp_message_code != LIST_BUCKETS_RESPONSE
@@ -137,8 +151,7 @@ module Riak
       list_keys_request = RpbListKeysReq.new(:bucket => bucket)
       
       rpc.request Util::MessageCode::LIST_KEYS_REQUEST,
-                  list_keys_request,
-                  Riak::RpbListKeysResp
+                  list_keys_request
       
       raise ReturnRespError,
         t("response_incorrect") if rpc.resp_message_code != Util::MessageCode::LIST_KEYS_RESPONSE
@@ -154,8 +167,6 @@ module Riak
     def del_request(bucket, key, rw=nil)
       
     end
-    
-    
     
     private
 
