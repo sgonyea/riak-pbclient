@@ -14,5 +14,18 @@
 require File.expand_path("../spec_helper", File.dirname(__FILE__))
 
 describe Riak::Key do
-  
+  describe "when directly initializing" do
+    before :each do
+      @client = Riak::Client.new
+      @bucket = @client["goog"]
+    end
+
+    it "should default with the bucket and name, and an empty vclock" do
+      key                 =   Riak::Key.new(@bucket, "test")
+      key.bucket.should   ==  @bucket
+      key.name.should     ==  "test"
+      key.vclock.should   ==  nil
+      key.content.should  be_kind_of(Riak::RiakContent)
+    end
+  end # describe "when directly initializing"
 end # Riak::Key

@@ -77,7 +77,7 @@ module Riak
     def ping?
       rpc.request Util::MessageCode::PING_REQUEST
       
-      return rpc.resp_message_code == PING_RESPONSE
+      return rpc.status
     end
     
     def info

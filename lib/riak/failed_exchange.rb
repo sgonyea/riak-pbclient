@@ -27,7 +27,7 @@ module Riak
     def initialize(expected, actual, message, stub)
       @expected, @actual, @message, @stub = expected, actual, message, stub
       super t("failed_rx", :failure => 
-                t(@stub, :expected => @expected, :actual => @resp_mc, :message => @msg.inspect)
+                t(@stub, :expected => @expected, :actual => @actual, :message => @message.inspect)
             )
     end
   end

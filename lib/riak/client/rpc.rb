@@ -27,17 +27,18 @@ module Riak
       include Riak::Util::Encode
       include Riak::Util::Decode
 
-      attr_reader :req_message, :response, :resp_message_code, :resp_message
+      attr_reader :req_message, :response, :resp_message_codes, :resp_message, :status
 
       # Establishes a Client ID with the Riak node, for the life of the RPC connection.
       # @param [Client] the Riak::Client object in which this Rpc instance lives
       def initialize(client)
+        @status             = false
         @client             = client
         @client_id          = request(Util::MessageCode::GET_CLIENT_ID_REQUEST).client_id
         @set_client_id      = Riak::RpbSetClientIdReq.new(:client_id => @client_id)
 
         # Request / Response Data
-        @resp_message_code  = -1
+        @resp_message_codes = -1
         @resp_message       = ''
         @req_message_code   = -1
         @req_message        = ''
@@ -46,11 +47,12 @@ module Riak
 
       # Clears the request / response data, in preparation for a new request
       def clear
-        @resp_message_code  = -1
+        @resp_message_codes = -1
         @resp_message       = ''
         @req_message_code   = -1
         @req_message        = ''
         @response           = ''
+        @status             = false
       end
 
       # Opens a TCPSocket connection with the riak host/node
@@ -88,7 +90,7 @@ module Riak
       # @return [True/False] whether or not the set client id request succeeded
       def request(mc, pb_msg=nil)
         clear
-        
+
         @req_message_code = mc
         @response         = RESPONSE_CLASS_FOR[mc].new unless RESPONSE_CLASS_FOR[mc].nil?
 
@@ -111,20 +113,24 @@ module Riak
       def response=(value)
         @resp_message = value
 
-        @resp_message_code, response_chunk = decode_message(value)
+        response_chunk, @resp_message_codes = decode_message(value)
+
+        @resp_message_codes.each do |resp_mc|
+          if resp_mc.equal?(ERROR_RESPONSE)
+            raise FailedRequest.new(MC_RESPONSE_FOR[@req_message_code], @resp_message_codes, response_chunk)
+          end
+
+          # The below should never really happen
+          if resp_mc != MC_RESPONSE_FOR[@req_message_code]
+            raise FailedExchange.new(MC_RESPONSE_FOR[@req_message_code], @resp_message_codes, response_chunk, "failed_request")
+          end
+        end
         
-        if @resp_message_code.equal?(ERROR_RESPONSE)
-          raise FailedRequest.new(MC_RESPONSE_FOR[@req_message_code], @resp_message_code, response_chunk)
-        end
-
-        if @resp_message_code != MC_RESPONSE_FOR[@req_message_code]
-          raise FailedExchange.new(MC_RESPONSE_FOR[@req_message_code], @resp_message_code, response_chunk, "failed_request")
-        end
-
         if response_chunk.size > 0
           @response.parse_from_string response_chunk
         end
 
+        @status = true
         return(@response)
       end
 

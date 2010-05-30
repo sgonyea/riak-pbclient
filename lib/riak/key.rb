@@ -61,12 +61,12 @@ module Riak
     def load(get_response)
       raise ArgumentError, t("response_type") unless get_response.is_a?(Riak::RpbGetResp)
       
-      self.vclock     = get_response.vclock if get_response.has_field?(:vclock)
+      self.vclock       = get_response.vclock if get_response.has_field?(:vclock)
       
       if get_response.has_field?(:content)
-        self.content  = get_response.content
+        self.content    = get_response.content
       else
-        @contents     = [Riak::RiakContent.new]
+        @contents[:new]
       end
       
       return(self)
@@ -107,17 +107,7 @@ module Riak
       
       @name = key_name
     end
-    
-    # Sets the vclock attribute for this Key, which was supplied by the Riak node (if you're doing it right)
-    # @param [Fixnum] vclock the vector clock
-    # @return [Fixnum] the vector clock
-    # @raise [ArgumentError] if you failed at this basic task, you'll be instructed to place your head on the keyboard
-    def vclock=(vclock)
-      raise ArgumentError, t("vclock_type") unless vclock.is_a?(String)
-      
-      @vclock = vclock
-    end
-    
+
     # Sets the content object for this Key.  I do not yet support siblings in this method and, therefore,
     #  you may or may not destroy them if you use this and are not careful.
     # @param [Riak::RiakContent] content a RiakContent instance that should be contained within this Key
@@ -152,10 +142,10 @@ module Riak
     #   there are siblings.
     # @return [Riak::RiakContent] the content of this Key instance's value (ie, key/value)
     def content
-      if @contents.size == 1
-        return(contents[0])
-      else
-        contents
+      case @contents.size
+      when 0 then @contents[:new]
+      when 1 then contents[0]
+      else        contents
       end
     end
     
@@ -192,6 +182,16 @@ module Riak
       
       @bucket ||= bucket
     end
-    
+
+    # Sets the vclock attribute for this Key, which was supplied by the Riak node (if you're doing it right)
+    # @param [Fixnum] vclock the vector clock
+    # @return [Fixnum] the vector clock
+    # @raise [ArgumentError] if you failed at this basic task, you'll be instructed to place your head on the keyboard
+    def vclock=(vclock)
+      raise ArgumentError, t("vclock_type") unless vclock.is_a?(String)
+      
+      @vclock = vclock
+    end
+
   end # class Key
 end # module Riak
