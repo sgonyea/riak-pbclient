@@ -63,15 +63,11 @@ module Riak
 #      options.assert_valid_keys(:value, :data, :content_type, :charset, :content_encoding)
 
       @key              = key unless key.nil?
-      @value            = contents[:value]
-      @value          ||= contents[:data]
-      @charset          = contents[:charset]
-      @content_type     = contents[:content_type]
-      @content_encoding = contents[:content_encoding]
-
       @links            = Set.new
       @usermeta         = {}
-
+      
+      load(contents) unless contents.empty?
+      
       yield self if block_given?
     end
 
@@ -81,15 +77,15 @@ module Riak
     # @return [RiakContent] self
     def load(contents)
       if contents.is_a?(Riak::RpbContent) or contents.is_a?(Hash)
-        @value            = contents[:value]
-        @content_type     = contents[:content_type]
-        @charset          = contents[:charset]
-        @content_encoding = contents[:content_encoding]
-        @vtag             = contents[:vtag]
-        self.links        = contents[:links]
+        @value            = contents[:value]            unless contents[:value].empty?
+        @content_type     = contents[:content_type]     unless contents[:content_type].empty?
+        @charset          = contents[:charset]          unless contents[:charset].empty?
+        @content_encoding = contents[:content_encoding] unless contents[:content_encoding].empty?
+        @vtag             = contents[:vtag]             unless contents[:vtag].empty?
+        self.links        = contents[:links]            unless contents[:links].empty?
         @last_mod         = contents[:last_mod]
         @last_mod_usecs   = contents[:last_mod_usecs]
-        self.usermeta     = contents[:usermeta]
+        self.usermeta     = contents[:usermeta]         unless contents[:usermeta].empty?
 
         return(self)
       end
@@ -103,6 +99,26 @@ module Riak
 
     def save!
       
+    end
+
+    def get_link
+      
+    end
+
+    def links=(pb_links)
+      @links.clear
+      
+      pb_links.each do |pb_link|
+        if @key.nil?
+          link = [pb_link.tag, pb_link.bucket, pb_link.key]
+        else
+          link = [pb_link.tag, @key.get_linked(pb_link.bucket, pb_link.key, {:safely => true})]
+        end
+        
+        @links.add(link)
+      end
+      
+      return(@links)
     end
 
     # @return [Riak::RpbContent] An instance of a RpbContent, suitable for protobuf exchange

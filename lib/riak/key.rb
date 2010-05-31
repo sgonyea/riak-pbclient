@@ -43,7 +43,7 @@ module Riak
       self.bucket   = bucket
       self.name     = key
       
-      @contents     = Hash.new{|k,v| k[v] = Riak::RiakContent.new}
+      @contents     = Hash.new{|k,v| k[v] = Riak::RiakContent.new(self)}
       
       @contents[:new]
       
@@ -56,18 +56,18 @@ module Riak
     # @return [Key] self
     def load(get_response)
       raise ArgumentError, t("response_type") unless get_response.is_a?(Riak::RpbGetResp)
-      
+
       self.vclock       = get_response.vclock if get_response.has_field?(:vclock)
-      
+
       if get_response.has_field?(:content)
         self.content    = get_response.content
       else
         @contents[:new]
       end
-      
+
       return(self)
     end
-    
+
     # Load information for the key from Riak::RpbGetResp object.
     #
     # @param [RpbGetResp/Hash] response an RpbGetResp object or a Hash.
@@ -89,6 +89,19 @@ module Riak
       end
       
       return(self)
+    end
+
+    def empty?
+      return(true) if @vclock.nil? and @contents.empty?
+      return(false)
+    end
+
+    def reload!
+      
+    end
+
+    def get_linked(bucket, key, options={})
+      @bucket.get_linked(bucket, key, options)
     end
 
     # Sets the name attribute for this Key object

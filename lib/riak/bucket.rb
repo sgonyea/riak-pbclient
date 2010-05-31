@@ -35,6 +35,8 @@ module Riak
     # @return [TrueClass/FalseClass] whether or not a key's siblings are to be retrieved
     attr_reader :allow_mult
     
+    attr_reader :key_cache
+    
     # Create a Riak bucket manually.
     # @param [Client] client the {Riak::Client} for this bucket
     # @param [String] name the name of the bucket
@@ -47,6 +49,7 @@ module Riak
       @name       = name
       @n_val      = options[:n_val]       || nil
       @allow_mult = options[:allow_mult]  || nil
+      @key_cache  = Hash.new{|k,v| k[v] = Riak::Key.new(self, v)}
     end
 
     # Load information for the bucket from a response given by the {Riak::Client::HTTPBackend}.
@@ -79,13 +82,17 @@ module Riak
     # @param [String] key the key of the object to retrieve
     # @param [Fixnum] r - the read quorum for the request - how many nodes should concur on the read
     # @return [Riak::Key] the object
-    def key(key, r=nil)
-      raise ArgumentError, t("fixnum_invalid", :num => r)       unless r.is_a?(Fixnum) or r.is_a?(NilClass)
-      raise ArgumentError, t("string_invalid", :string => key)  unless key.is_a?(String)
+    def key(key, options={})
+      raise ArgumentError, t("fixnum_invalid", :num => options[:r]) unless options[:r].is_a?(NilClass) or options[:r].is_a?(Fixnum)
+      raise ArgumentError, t("string_invalid", :string => key)      unless key.is_a?(String)
 
-      response = @client.get_request @name, key, r
+      if options[:safely] == true
+        return(@key_cache[key]) unless @key_cache[key].empty?
+      end
 
-      Riak::Key.new(self, key, response)
+      response = @client.get_request @name, key, options[:r]
+
+      @key_cache[key].load(response)
     end
     alias :[] :key
     
@@ -100,6 +107,10 @@ module Riak
       response = @client.get_request @name, key, r
       
       Riak::Key.new(self, key).load!(response)
+    end
+    
+    def get_linked(bucket, key, options=nil)
+      @client[bucket].key(key, options)
     end
     
     # Deletes a key from the bucket

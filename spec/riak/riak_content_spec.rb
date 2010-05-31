@@ -50,5 +50,28 @@ describe Riak::RiakContent do
       rcontent                          =   Riak::RiakContent.new
       rcontent.to_pb.should             be_kind_of(Riak::RpbContent)
     end
+    
+    it "should load a Riak::RpbContent instance, returning a matching self, RiakContent" do
+      rcontent                          =   Riak::RiakContent.new(@key)
+      rpb_content                       =   Riak::RpbContent.new
+      rpb_content.value                 =   "{\"Date\":\"2010-04-12\",\"Open\":567.35,\"High\":574.00,\"Low\":566.22,\"Close\":572.73,\"Volume\":2352400,\"Adj. Close\":572.73}"
+      rpb_content.content_type          =   "application/json"
+      rpb_content.vtag                  =   "4DNB6Vt0zLl5VJ6P2xx9dc"
+      rpb_content.last_mod              =   1274645855
+      rpb_content.last_mod_usecs        =   968694
+
+      rcontent                          =   Riak::RiakContent.new.load(rpb_content)
+      rcontent.key.should               ==  nil
+      rcontent.value.should             ==  "{\"Date\":\"2010-04-12\",\"Open\":567.35,\"High\":574.00,\"Low\":566.22,\"Close\":572.73,\"Volume\":2352400,\"Adj. Close\":572.73}"
+      rcontent.content_type.should      ==  "application/json"
+      rcontent.charset.should           ==  nil
+      rcontent.content_encoding.should  ==  nil
+      rcontent.vtag.should              ==  "4DNB6Vt0zLl5VJ6P2xx9dc"
+      rcontent.links.should             be_kind_of(Set)
+      rcontent.last_mod.should          ==  1274645855
+      rcontent.last_mod_usecs.should    ==  968694
+      rcontent.usermeta.should          be_kind_of(Hash)
+      
+    end
   end # describe "when directly initializing"
 end # Riak::RiakContent
