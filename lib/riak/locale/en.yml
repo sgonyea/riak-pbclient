@@ -40,5 +40,5 @@ en:
     boolean_type: "invalid_argument {{value}} is not true or false"
     fixnum_type: "invalid_argument {{value}} must be an integer"
     error_response: "the riak node responded with an error message code"
-    
-    
+    unresolved_siblings: "this Key contains unresolved siblings, which must first be resolved"
+

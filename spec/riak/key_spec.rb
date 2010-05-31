@@ -27,5 +27,21 @@ describe Riak::Key do
       key.vclock.should   ==  nil
       key.content.should  be_kind_of(Riak::RiakContent)
     end
+
+    it "should serialize into a Key Protocol Buffer (RpbPutReq)" do
+      key                   =   Riak::Key.new(@bucket, "test")
+      pb_put                =   key.to_pb_put
+      pb_put.should         be_kind_of(Riak::RpbPutReq)
+      pb_put.vclock.should  ==  ""
+    end
+
+    it "should serialize into a Link Protocol Buffer (RpbLink)" do
+      key                   =   Riak::Key.new(@bucket, "test")
+      pb_link               =   key.to_pb_link
+      pb_link.should        be_kind_of(Riak::RpbLink)
+      pb_link.bucket.should ==  "goog"
+      pb_link.key.should    ==  "test"
+    end
   end # describe "when directly initializing"
 end # Riak::Key
+

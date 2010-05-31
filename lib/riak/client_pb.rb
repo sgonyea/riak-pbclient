@@ -220,8 +220,8 @@
 # message RpbContent {
 #     required bytes value = 1;
 #     optional bytes content_type = 2;     // the media type/format
-#     optional bytes charset = 3;          
-#     optional bytes content_encoding = 4; 
+#     optional bytes charset = 3;
+#     optional bytes content_encoding = 4;
 #     optional bytes vtag = 5;
 #     repeated RpbLink links = 6;          // links to other resources
 #     optional uint32 last_mod = 7;

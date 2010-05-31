@@ -24,6 +24,8 @@ module Riak
     include Util::Translation
     include Util::MessageCode
     
+    attr_accessor   :key
+    
     # @return [String] the data stored in Riak at this object's key.  Varies in format by content-type.
     attr_accessor   :value
     alias_attribute :data, :value
@@ -57,32 +59,66 @@ module Riak
     
     # Create a new riak_content object manually
     # @see Key#content
-    def initialize(contents={})
+    def initialize(key=nil, contents={})
 #      options.assert_valid_keys(:value, :data, :content_type, :charset, :content_encoding)
-      
+
+      @key              = key unless key.nil?
       @value            = contents[:value]
       @value          ||= contents[:data]
       @charset          = contents[:charset]
       @content_type     = contents[:content_type]
       @content_encoding = contents[:content_encoding]
-      
-      @links, @meta     = Set.new, {}
+
+      @links            = Set.new
+      @usermeta         = {}
+
       yield self if block_given?
     end
-    
+
+    # Load information for the content from the response object, Riak::RpbContent.
+    #
+    # @param [RpbContent/Hash] contents an RpbContent object or a Hash.
+    # @return [RiakContent] self
     def load(contents)
-      raise ArgumentError, t("riak_content_type") unless contents.is_a?(Riak::RpbContent)
+      if contents.is_a?(Riak::RpbContent) or contents.is_a?(Hash)
+        @value            = contents[:value]
+        @content_type     = contents[:content_type]
+        @charset          = contents[:charset]
+        @content_encoding = contents[:content_encoding]
+        @vtag             = contents[:vtag]
+        self.links        = contents[:links]
+        @last_mod         = contents[:last_mod]
+        @last_mod_usecs   = contents[:last_mod_usecs]
+        self.usermeta     = contents[:usermeta]
+
+        return(self)
+      end
+
+      raise ArgumentError, t("riak_content_type")
+    end
+
+    def save
       
-      @value            = contents[:value]
-      @content_type     = contents[:content_type]
-      @charset          = contents[:charset]
-      @content_encoding = contents[:content_encoding]
-      @vtag             = contents[:vtag]
-#      self.links        = contents[:links]
-      @last_mod         = contents[:last_mod]
-      @last_mod_usecs   = contents[:last_mod_usecs]
-#      self.usermeta     = contents[:usermeta]
+    end
+
+    def save!
       
+    end
+
+    # @return [Riak::RpbContent] An instance of a RpbContent, suitable for protobuf exchange
+    def to_pb
+      rpb_content                   = Riak::RpbContent.new
+      rpb_content.value             = @value
+      rpb_content.content_type      = @content_type
+      rpb_content.charset           = @charset
+      rpb_content.content_encoding  = @content_encoding
+      rpb_content.vtag              = @vtag
+#      rpb_content.links             = @links
+      rpb_content.last_mod          = @last_mod
+      rpb_content.last_mod_usecs    = @last_mod_usecs
+#      rpb_content.usermeta          = @usermeta
+
+      return(rpb_content)
     end
 
     # @return [String] A representation suitable for IRB and debugging output
@@ -97,7 +133,7 @@ module Riak
           (@last_mod.nil?)          ? nil : "last_mod=#{last_mod.inspect}",
           (@last_mod_usecs.nil?)    ? nil : "last_mod_usecs=#{last_mod_usecs.inspect}",
           (@usermeta.nil?)          ? nil : "usermeta=#{@usermeta.inspect}"
-          
+
         ].compact.join(", ") + ">"
     end
 

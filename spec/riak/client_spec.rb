@@ -19,7 +19,6 @@ describe Riak::Client do
       client = Riak::Client.new
       client.host.should      == "127.0.0.1"
       client.port.should      == 8087
-      client._buckets.should  == []
     end
 
     it "should accept a host" do

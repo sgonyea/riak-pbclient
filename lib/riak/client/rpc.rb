@@ -80,7 +80,7 @@ module Riak
 
         resp_code, resp_msg = decode_message(set_c_id_resp)
 
-        return resp_code == Util::MessageCode::SET_CLIENT_ID_RESPONSE
+        return(resp_code == Util::MessageCode::SET_CLIENT_ID_RESPONSE)
       end
       
       # Sends the request to the riak node

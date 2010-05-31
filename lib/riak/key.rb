@@ -28,16 +28,10 @@ module Riak
 
     # @return [String] the bucket name
     attr_reader :name
-    
-    # @return [Array<RiakContent>] From the PBC API:
-#    attr_reader :contents
-    #  content - value+metadata entries for the object. If there are siblings there will be
-    #              more than one entry. If the key is not found, content will be empty.
-    #  https://wiki.basho.com/display/RIAK/PBC+API
-    
+
     # @return [String] the bucket name
     attr_reader :vclock
-    
+
     # Create a Riak bucket manually.
     # @param [Bucket] bucket the Bucket object within which this Key exists
     # @option options [String] name the name assigned to this Key entity
@@ -50,6 +44,8 @@ module Riak
       self.name     = key
       
       @contents     = Hash.new{|k,v| k[v] = Riak::RiakContent.new}
+      
+      @contents[:new]
       
       load(get_response) unless get_response.nil?
     end
@@ -101,10 +97,7 @@ module Riak
     # @raise [FailedRequest] if the new properties were not accepted by the Riak server
     def name=(key_name)
       raise ArgumentError, t("key_name_type") unless key_name.is_a?(String)
-      
-      warn  "name is already set to'#{@name}'; setting to '#{key_name}'.  " +
-            "Renaming is not yet supported.  May result in duplicate keys." if @name
-      
+
       @name = key_name
     end
 
@@ -150,13 +143,54 @@ module Riak
     end
     
     # "@contents" is an array of RiakContent objects.  This gives you that entire array.
-    # @return [Array<Riak::RiakContent>] the contents of this Key instance's value- and any of that content's siblings, if they were requested
+    # @return [Array<Riak::RiakContent>] the contents of this Key instance's value and its siblings, if any
     def contents
       retr_c = []
       
       @contents.each{|k,v| retr_c << v}
       
       return(retr_c)
+    end
+
+    def save(params=nil)
+      
+    end
+
+    def save!(params=nil)
+      
+    end
+
+    # Creates an RpbPutReq instance, to be shipped off to riak and saved
+    # @return [Riak::RpbPutReq] 
+    def to_pb_put(params={})
+      content     = params[:content]
+      write_q     = params[:w]  || params[:quorum]
+      write_d     = params[:dw] || params[:durable]
+      return_body = params[:rb] || params[:return_body] || true
+      
+      if content.nil? and contents.size == 1
+        content = contents[0]
+      elsif content.nil?
+        raise SiblingError.new(self.name)
+      end
+
+      pb_put_req          = Riak::RpbPutReq.new
+      pb_put_req.content  = content.to_pb if      content.is_a?(Riak::RiakContent)
+      pb_put_req.content  = content       if      content.is_a?(Riak::RpbContent)
+      pb_put_req.vclock   = @vclock       unless  @vclock.nil?
+      
+
+      return(pb_put_req)
+    end
+
+    # "@contents" is an array of RiakContent objects.  This gives you that entire array.
+    # @return [Riak::RpbLink] 
+    def to_pb_link
+      pb_link = Riak::RpbLink.new
+      pb_link[:bucket]  = @bucket.name
+      pb_link[:key]     = @name
+      
+      return(pb_link)
     end
 
     # Deletes this key from its Bucket container
@@ -186,7 +220,7 @@ module Riak
     # Sets the vclock attribute for this Key, which was supplied by the Riak node (if you're doing it right)
     # @param [Fixnum] vclock the vector clock
     # @return [Fixnum] the vector clock
-    # @raise [ArgumentError] if you failed at this basic task, you'll be instructed to place your head on the keyboard
+    # @raise [ArgumentError] if you failed at this task, you'll be instructed to place your head on the keyboard
     def vclock=(vclock)
       raise ArgumentError, t("vclock_type") unless vclock.is_a?(String)
       

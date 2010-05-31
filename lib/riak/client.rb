@@ -34,7 +34,7 @@ module Riak
     attr_reader :host
     attr_reader :port
     attr_reader :buckets
-    attr_reader :_buckets
+    attr_reader :bucket_cache
     attr_reader :node
     attr_reader :server_version
 
@@ -45,7 +45,8 @@ module Riak
     def initialize(options={})
       self.host         = options[:host]  || "127.0.0.1"
       self.port         = options[:port]  || 8087
-      @_buckets         = []
+      @buckets          = []
+      @bucket_cache     = Hash.new{|k,v| k[v] = Riak::Bucket.new(self, v)}
     end
 
     # Set the hostname of the Riak endpoint. Must be an IPv4, IPv6, or valid hostname
@@ -91,16 +92,15 @@ module Riak
 
     # I need bucket!  Bring me bucket! (Retrieves a bucket from Riak.  Eating disorder not included.)
     # @param [String] bucket the bucket to retrieve
-    # @param [Hash] options options for retrieving the bucket
-    # @option options [Boolean] :keys (true) whether to retrieve the bucket keys
     # @return [Bucket] the requested bucket
-    def bring_me_bucket(bucket, options={})
-      request   = Riak::RpbGetBucketReq.new(:bucket => bucket)
-      response  = rpc.request(
-                    Util::MessageCode::GET_BUCKET_REQUEST,
-                    request
-                  )
-      Bucket.new(self, bucket).load(response)
+    def bring_me_bucket(bucket)
+      request       = Riak::RpbGetBucketReq.new(:bucket => bucket)
+      response      = rpc.request(
+                        Util::MessageCode::GET_BUCKET_REQUEST,
+                        request
+                      )
+
+      @bucket_cache[bucket].load(response)
     end
     alias :[]     :bring_me_bucket
     alias :bucket :bring_me_bucket
@@ -136,7 +136,7 @@ module Riak
       rpc.request Util::MessageCode::LIST_BUCKETS_REQUEST
       
       # iterate through each of the Strings in the Bucket list, returning an array of String(s)
-      @_buckets = rpc.response.buckets.each{|b| b}
+      @buckets = rpc.response.buckets.each{|b| b}
     end
     
     # Lists the keys within their respective buckets, that are found in the Riak database
