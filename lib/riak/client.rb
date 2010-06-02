@@ -145,7 +145,7 @@ module Riak
     end
 
     def del_request(bucket, key, rw=nil)
-      request         = Riak::RpbDelRequest.new
+      request         = Riak::RpbDelReq.new
       request.bucket  = bucket
       request.key     = key
       request.rw    ||= rw

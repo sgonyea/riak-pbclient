@@ -123,13 +123,15 @@ module Riak
     def content=(riak_contents)
 
       if riak_contents.is_a?(Protobuf::Field::FieldArray)
-        raise NoContentError if riak_contents.empty?
-
         @contents.clear
+        
+        return(false) if riak_contents.empty?
 
         riak_contents.each do |rc|
           @contents[rc.vtag].load(rc)
         end
+        
+        return(true)
       elsif riak_contents.is_a?(Riak::RiakContent)
 
         @contents.clear
