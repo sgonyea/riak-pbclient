@@ -29,10 +29,10 @@ describe Riak::Key do
     end
 
     it "should serialize into a Key Protocol Buffer (RpbPutReq)" do
-      key                   =   Riak::Key.new(@bucket, "test")
+      key                   =   @bucket["2010-04-12"] # Riak::Key.new(@bucket, "test")
       pb_put                =   key.to_pb_put
       pb_put.should         be_kind_of(Riak::RpbPutReq)
-      pb_put.vclock.should  ==  ""
+#      pb_put.vclock.should  ==  "k\xCEa```\xCC`\xCA\x05R,\xACL\xF7^e0%2\xE6\xB12\xC4s\xE6\x1D\xE5\xCB\x02\x00"
     end
 
     it "should serialize into a Link Protocol Buffer (RpbLink)" do

@@ -113,6 +113,11 @@ module Riak
       @client[bucket].key(key, options)
     end
     
+    def store(options)
+      options[:bucket] = @name
+      @client.put_request(options)
+    end
+    
     # Deletes a key from the bucket
     # @param [String] key the key to delete
     # @param [Hash] options quorum options

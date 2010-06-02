@@ -60,8 +60,8 @@ describe Riak::RiakContent do
       rpb_content.last_mod              =   1274645855
       rpb_content.last_mod_usecs        =   968694
 
-      rcontent                          =   Riak::RiakContent.new.load(rpb_content)
-      rcontent.key.should               ==  nil
+      rcontent.load(rpb_content)
+      rcontent.key.should               ==  @key
       rcontent.value.should             ==  "{\"Date\":\"2010-04-12\",\"Open\":567.35,\"High\":574.00,\"Low\":566.22,\"Close\":572.73,\"Volume\":2352400,\"Adj. Close\":572.73}"
       rcontent.content_type.should      ==  "application/json"
       rcontent.charset.should           ==  nil
@@ -71,7 +71,7 @@ describe Riak::RiakContent do
       rcontent.last_mod.should          ==  1274645855
       rcontent.last_mod_usecs.should    ==  968694
       rcontent.usermeta.should          be_kind_of(Hash)
-      
     end
+    
   end # describe "when directly initializing"
 end # Riak::RiakContent

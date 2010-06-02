@@ -295,7 +295,7 @@ module Riak
   end
   class RpbPutResp < ::Protobuf::Message
     defined_in __FILE__
-    repeated :RpbContent, :contents, 1
+    repeated :RpbContent, :content, 1
     optional :bytes, :vclock, 2
   end
   class RpbDelReq < ::Protobuf::Message

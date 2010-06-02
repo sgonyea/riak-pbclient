@@ -15,13 +15,14 @@ module Riak
   # Domain objects
   autoload :I18n,             'riak/i18n'
   autoload :Client,           'riak/client'
-  autoload :RiakContent,      'riak/riak_content'
   autoload :Key,              'riak/key'
+  autoload :RiakContent,      'riak/riak_content'
   autoload :Bucket,           'riak/bucket'
 
   # Exceptions
   autoload :FailedRequest,    "riak/failed_request"
   autoload :FailedExchange,   "riak/failed_exchange"
+  autoload :SiblingError,     "riak/sibling_error"
 
   module Util
     autoload :Translation,    'riak/util/translation'

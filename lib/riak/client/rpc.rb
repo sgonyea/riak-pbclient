@@ -86,7 +86,6 @@ module Riak
       # Sends the request to the riak node
       # @param [Fixnum] mc The message code that identifies the request
       # @param [Protobuf::Message] pb_msg The protobuf message, if applicable, for the message code
-      # @param [Protobuf::Message] pb_msg The protobuf message, if applicable, for the message code
       # @return [True/False] whether or not the set client id request succeeded
       def request(mc, pb_msg=nil)
         clear

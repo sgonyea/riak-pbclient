@@ -93,46 +93,72 @@ module Riak
       raise ArgumentError, t("riak_content_type")
     end
 
-    def save
-      
+    # Save the RiakContent instance in riak.
+    # @option options [Fixnum] w (write quorum) how many replicas to write to before returning a successful response
+    # @option options [Fixnum] dw how many replicas to commit to durable storage before returning a successful response
+    # @option options [Boolean] return_body whether or not to have riak return the key, once saved.  default = true
+    def save(options={})
+      begin
+        save!(options)
+      rescue FailedRequest
+        return(false)
+      end
+      return(true)
     end
 
-    def save!
-      
-    end
-
-    def get_link
-      
+    # Save the RiakContent instance in riak.  Raise/do not rescue on failure.
+    # @option options [Fixnum] w (write quorum) how many replicas to write to before returning a successful response
+    # @option options [Fixnum] dw how many replicas to commit to durable storage before returning a successful response
+    # @option options [Boolean] return_body whether or not to have riak return the key, once saved.  default = true
+    def save!(options={})
+      options[:content] = self
+      return(true) if @key.save(options)
+      return(false) # Create and raise Error message for this?  Extend "Failed Request"?
     end
 
     def links=(pb_links)
       @links.clear
-      
+
       pb_links.each do |pb_link|
         if @key.nil?
           link = [pb_link.tag, pb_link.bucket, pb_link.key]
         else
           link = [pb_link.tag, @key.get_linked(pb_link.bucket, pb_link.key, {:safely => true})]
         end
-        
+
         @links.add(link)
       end
-      
+
       return(@links)
     end
 
     # @return [Riak::RpbContent] An instance of a RpbContent, suitable for protobuf exchange
     def to_pb
+      links                         = []
+      @links.each do |link|
+        pb_link       = link[1].to_pb_link
+        pb_link[:tag] = link[0]
+        links << pb_link
+      end
+
+      usermeta                      = []
+      @usermeta.each do |key,value|
+        pb_pair         = Riak::RpbPair.new
+        pb_pair[:key]   = key
+        pb_pair[:value] = value
+        usermeta << pb_pair
+      end
+
       rpb_content                   = Riak::RpbContent.new
       rpb_content.value             = @value
-      rpb_content.content_type      = @content_type
-      rpb_content.charset           = @charset
-      rpb_content.content_encoding  = @content_encoding
-      rpb_content.vtag              = @vtag
-#      rpb_content.links             = @links
+      rpb_content.content_type      = @content_type     unless @content_type.nil?
+      rpb_content.charset           = @charset          unless @charset.nil? # || @charset.empty?
+      rpb_content.content_encoding  = @content_encoding unless @content_encoding.nil? # || @content_encoding.empty?
+      rpb_content.vtag              = @vtag             unless @vtag.nil?
+      rpb_content.links             = links             unless links.empty?
       rpb_content.last_mod          = @last_mod
       rpb_content.last_mod_usecs    = @last_mod_usecs
-#      rpb_content.usermeta          = @usermeta
+      rpb_content.usermeta          = usermeta          unless usermeta.empty?
 
       return(rpb_content)
     end

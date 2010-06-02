@@ -39,29 +39,30 @@ module Riak
     # @option options [RiakContent] content a content object, that's to be inserted in this Key
     def initialize(bucket, key, get_response=nil)
 #      options.assert_valid_keys(:name, :vclock, :content)
-      
+
       self.bucket   = bucket
       self.name     = key
-      
+
       @contents     = Hash.new{|k,v| k[v] = Riak::RiakContent.new(self)}
-      
-      @contents[:new]
-      
+
+#      @contents[:new]
+
       load(get_response) unless get_response.nil?
     end
 
     # Load information for the key from the response object, Riak::RpbGetResp.
     #
-    # @param [RpbGetResp/Hash] response an RpbGetResp object or a Hash.
+    # @param [RpbGetResp/Hash] response an RpbGetResp/RpbPutResp object or a Hash.
     # @return [Key] self
-    def load(get_response)
-      raise ArgumentError, t("response_type") unless get_response.is_a?(Riak::RpbGetResp)
+    def load(response)
+      @blargh = response
+      raise ArgumentError, t("response_type") unless response.is_a?(Protobuf::Message)
 
-      self.vclock       = get_response.vclock if get_response.has_field?(:vclock)
+      self.vclock       = response.vclock if response.has_field?(:vclock)
 
-      if get_response.has_field?(:content)
-        self.content    = get_response.content
-      else
+      if response.has_field?(:content)
+        self.content    = response.content
+      elsif @contents.empty?
         @contents[:new]
       end
 
@@ -70,24 +71,24 @@ module Riak
 
     # Load information for the key from Riak::RpbGetResp object.
     #
-    # @param [RpbGetResp/Hash] response an RpbGetResp object or a Hash.
+    # @param [RpbGetResp/Hash] response an RpbGetResp/RpbPutResp object or a Hash.
     # @return [Key] self
-    def load!(get_response)
-      raise ArgumentError, t("response_type") unless get_response.is_a?(Riak::RpbGetResp)
-      
-      if get_response.has_field?(:vclock) and get_response.has_field?(:content)
-        
-        self.vclock   = get_response.vclock
-        self.content  = get_response.content
-        
-      elsif get_response.has_field?(:vclock) or get_response.has_field?(:content)
+    def load!(response)
+      raise ArgumentError, t("response_type") unless response.is_a?(Riak::RpbGetResp)
+
+      if response.has_field?(:vclock) and response.has_field?(:content)
+
+        self.vclock   = response.vclock
+        self.content  = response.content
+
+      elsif response.has_field?(:vclock) or response.has_field?(:content)
         raise MalformedKeyError # This should never happen
-        
+
       else
         raise KeyNotFoundError
-        
+
       end
-      
+
       return(self)
     end
 
@@ -97,7 +98,7 @@ module Riak
     end
 
     def reload!
-      
+
     end
 
     def get_linked(bucket, key, options={})
@@ -120,30 +121,30 @@ module Riak
     # @return [Riak::RiakContent] the RiakContent instance that was just set
     # @raise [ArgumentError] will yell at you if the supplied riak_content is not of the RiakContent class
     def content=(riak_contents)
-      
+
       if riak_contents.is_a?(Protobuf::Field::FieldArray)
         raise NoContentError if riak_contents.empty?
 
         @contents.clear
-        
+
         riak_contents.each do |rc|
           @contents[rc.vtag].load(rc)
         end
       elsif riak_contents.is_a?(Riak::RiakContent)
-        
+
         @contents.clear
-        
+
         @contents[riak_contents.vtag].load(riak_contents)
-        
+
       elsif riak_contents.nil?
         @contents.clear
-        
+
       else
         raise ArgumentError, t("riak_content_type")
       end # if riak_contents
-      
+
     end # def content=
-    
+
     # "@contents" is an array of RiakContent objects, though only contains more than one in the event that
     #   there are siblings.
     # @return [Riak::RiakContent] the content of this Key instance's value (ie, key/value)
@@ -154,55 +155,95 @@ module Riak
       else        contents
       end
     end
-    
+
     # "@contents" is an array of RiakContent objects.  This gives you that entire array.
     # @return [Array<Riak::RiakContent>] the contents of this Key instance's value and its siblings, if any
     def contents
       retr_c = []
-      
+
       @contents.each{|k,v| retr_c << v}
-      
+
       return(retr_c)
     end
 
-    def save(params=nil)
+    # Save the Key+RiakContent instance in riak.
+    # @option options [RiakContent] content RiakContent instance to be saved in this Key.  Must be specified if there are siblings.
+    # @option options [Fixnum] w (write quorum) how many replicas to write to before returning a successful response
+    # @option options [Fixnum] dw how many replicas to commit to durable storage before returning a successful response
+    # @option options [Boolean] return_body whether or not to have riak return the key, once saved.  default = true
+    # TODO: Add in content checking
+    def save(options={})
+      rcontent = options[:content]
       
+      if rcontent.nil?
+        case contents.size
+        when 0 then raise ArgumentError, t('empty_content')
+        when 1 then rcontent = contents[0]
+        else        raise SiblingError.new(self.name)
+        end
+      end
+      
+      options[:content] = rcontent.to_pb  if      rcontent.is_a?(Riak::RiakContent)
+      options[:content] = rcontent        if      rcontent.is_a?(Riak::RpbContent)
+      options[:key]     = @name
+      options[:vclock]  = @vclock         unless  @vclock.nil?
+      
+      begin
+        response = @bucket.store(options)
+        load(response)
+        return(true) if @contents.count == 1
+        return(false)
+      rescue FailedRequest
+        return(false)
+      end
     end
 
-    def save!(params=nil)
-      
+    # Save the RiakContent instance in riak.  Raise/do not rescue on failure.
+    # @option options [Fixnum] w (write quorum) how many replicas to write to before returning a successful response
+    # @option options [Fixnum] dw how many replicas to commit to durable storage before returning a successful response
+    # @option options [Boolean] return_body whether or not to have riak return the key, once saved.  default = true
+    def save!(options={})
+      begin
+        save(options)
+        return(true) if @contents.count == 1
+        raise FailedRequest.new("save_resp_siblings", 1, @contents.count, @contents) if @contents.count > 1
+      rescue FailedRequest
+        raise FailedRequest.new("save_resp_err")
+      end
     end
 
     # Creates an RpbPutReq instance, to be shipped off to riak and saved
-    # @return [Riak::RpbPutReq] 
-    def to_pb_put(params={})
-      content     = params[:content]
-      write_q     = params[:w]  || params[:quorum]
-      write_d     = params[:dw] || params[:durable]
-      return_body = params[:rb] || params[:return_body] || true
-      
-      if content.nil? and contents.size == 1
-        content = contents[0]
-      elsif content.nil?
-        raise SiblingError.new(self.name)
+    # @option options [Fixnum] w (write quorum) how many replicas to write to before returning a successful response
+    # @option options [Fixnum] dw how many replicas to commit to durable storage before returning a successful response
+    # @option options [Boolean] return_body whether or not to have riak return the key, once saved.  default = true
+    # @return [Riak::RpbPutReq]
+    def to_pb_put(options={})
+      rcontent    = options[:content]
+
+      if rcontent.nil?
+        case contents.size
+        when 0 then raise ArgumentError, t('empty_content')
+        when 1 then rcontent = contents[0]
+        else        raise SiblingError.new(self.name)
+        end
       end
 
-      pb_put_req          = Riak::RpbPutReq.new
-      pb_put_req.content  = content.to_pb if      content.is_a?(Riak::RiakContent)
-      pb_put_req.content  = content       if      content.is_a?(Riak::RpbContent)
-      pb_put_req.vclock   = @vclock       unless  @vclock.nil?
-      
+      pb_put_req              = Riak::RpbPutReq.new
+      pb_put_req.key          = @name
+      pb_put_req.content      = rcontent.to_pb  if      rcontent.is_a?(Riak::RiakContent)
+      pb_put_req.content      = rcontent        if      rcontent.is_a?(Riak::RpbContent)
+      pb_put_req.vclock       = @vclock         unless  @vclock.nil?
 
       return(pb_put_req)
     end
 
     # "@contents" is an array of RiakContent objects.  This gives you that entire array.
-    # @return [Riak::RpbLink] 
+    # @return [Riak::RpbLink]
     def to_pb_link
       pb_link = Riak::RpbLink.new
       pb_link[:bucket]  = @bucket.name
       pb_link[:key]     = @name
-      
+
       return(pb_link)
     end
 
@@ -217,16 +258,16 @@ module Riak
     def inspect
       "#<Riak::Key name=#{@name.inspect}, vclock=#{@vclock.inspect}, contents=#{contents.inspect}>"
     end
-    
+
     private
-    
+
     # Sets the name attribute for this Key object
     # @param [String] key_name sets the name of the Key
     # @return [Hash] the properties that were accepted
     # @raise [FailedRequest] if the new properties were not accepted by the Riak server
     def bucket=(bucket)
-      raise ArgumentError, t("bucket_type") unless bucket.is_a?(Riak::Bucket)
-      
+      raise ArgumentError, t("invalid_bucket") unless bucket.is_a?(Riak::Bucket)
+
       @bucket ||= bucket
     end
 
@@ -236,7 +277,7 @@ module Riak
     # @raise [ArgumentError] if you failed at this task, you'll be instructed to place your head on the keyboard
     def vclock=(vclock)
       raise ArgumentError, t("vclock_type") unless vclock.is_a?(String)
-      
+
       @vclock = vclock
     end
 

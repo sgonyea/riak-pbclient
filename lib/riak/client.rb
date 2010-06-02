@@ -45,6 +45,8 @@ module Riak
     def initialize(options={})
       self.host         = options[:host]  || "127.0.0.1"
       self.port         = options[:port]  || 8087
+      @w                = options[:w]
+      @dw               = options[:dw]
       @buckets          = []
       @bucket_cache     = Hash.new{|k,v| k[v] = Riak::Bucket.new(self, v)}
     end
@@ -123,6 +125,24 @@ module Riak
     end
     alias :req :get_request
     alias :get :get_request
+    
+    def put_request(options)
+      raise ArgumentError, t('invalid_bucket')  if options[:bucket].empty?
+      raise ArgumentError, t('empty_content')   if options[:content].nil?
+      
+      options[:w]           ||= @w  unless @w.nil?
+      options[:dw]          ||= @dw unless @dw.nil?
+      options[:return_body] ||= true
+      
+      request   = Riak::RpbPutReq.new(options)
+      
+      response  = rpc.request(
+                    Util::MessageCode::PUT_REQUEST,
+                    request
+                  )
+      
+      return(response)
+    end
     
     # @return [String] A representation suitable for IRB and debugging output.
 #      def inspect

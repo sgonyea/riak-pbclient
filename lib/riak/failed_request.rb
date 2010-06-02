@@ -21,11 +21,15 @@ module Riak
 
     attr_reader :expected
     attr_reader :actual
+    attr_reader :output
     attr_reader :message
 
-    def initialize(expected, actual, message)
-      @expected, @actual, @message = expected, actual, message
-      super t("failed_request", :expected => @expected, :actual => @actual, :message => @message.inspect)
+    def initialize(expected=nil, actual=nil, output=nil, message=nil)
+      @expected = expected
+      @actual   = actual
+      @output   = output
+      @message  = message || "failed_request"
+      super t(@message, :expected => @expected, :actual => @actual, :output => @output.inspect)
     end
   end
 end

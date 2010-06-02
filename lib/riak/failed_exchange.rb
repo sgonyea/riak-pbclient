@@ -21,13 +21,13 @@ module Riak
 
     attr_reader :expected
     attr_reader :actual
-    attr_reader :message
+    attr_reader :output
     attr_reader :stub
 
-    def initialize(expected, actual, message, stub)
-      @expected, @actual, @message, @stub = expected, actual, message, stub
+    def initialize(expected, actual, output, stub)
+      @expected, @actual, @output, @stub = expected, actual, output, stub
       super t("failed_rx", :failure => 
-                t(@stub, :expected => @expected, :actual => @actual, :message => @message.inspect)
+                t(@stub, :expected => @expected, :actual => @actual, :output => @output.inspect)
             )
     end
   end
