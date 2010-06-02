@@ -28,15 +28,15 @@ module Riak
 
     # @return [String] the bucket name
     attr_reader :name
-    
+
     # @return [Fixnum] the number of replicas for objects in this bucket
     attr_reader :n_val
-    
+
     # @return [TrueClass/FalseClass] whether or not a key's siblings are to be retrieved
     attr_reader :allow_mult
-    
+
     attr_reader :key_cache
-    
+
     # Create a Riak bucket manually.
     # @param [Client] client the {Riak::Client} for this bucket
     # @param [String] name the name of the bucket
@@ -44,7 +44,7 @@ module Riak
       options.assert_valid_keys(:n_val, :allow_mult)
       raise ArgumentError, t("client_type", :client => client.inspect)  unless client.is_a?(Client)
       raise ArgumentError, t("string_type", :string => name.inspect)    unless name.is_a?(String)
-      
+
       @client     = client
       @name       = name
       @n_val      = options[:n_val]       || nil
@@ -59,19 +59,19 @@ module Riak
     # @see Client#bucket
     def load(response)
       raise ArgumentError, t("response_type") unless response.is_a?(Riak::RpbGetBucketResp)
-      
+
       self.n_val      = response.props.n_val
       self.allow_mult = response.props.allow_mult
-      
+
       return(self)
     end
-    
+
     # Accesses or retrieves a list of keys in this bucket.  Needs to have expiration / cacheing, though not now.
     # @return [Array<String>] Keys in this bucket
     def keys
       @keys ||= @client.keys_in @name
     end
-    
+
     # Accesses or retrieves a list of keys in this bucket.  Needs to have expiration / cacheing, though not now.
     # @return [Array<String>] Keys in this bucket
     def keys!
@@ -95,7 +95,7 @@ module Riak
       @key_cache[key].load(response)
     end
     alias :[] :key
-    
+
     # Retrieve an object from within the bucket.  Will raise an error message if key does not exist.
     # @param [String] key the key of the object to retrieve
     # @param [Fixnum] quorum - the read quorum for the request - how many nodes should concur on the read
@@ -103,27 +103,42 @@ module Riak
     def key!(key, r=nil)
       raise ArgumentError, t("string_invalid", :string  => key) unless key.is_a?(String)
       raise ArgumentError, t("fixnum_invalid", :num     => r)   unless r.is_a?(Fixnum)
-      
+
       response = @client.get_request @name, key, r
-      
+
       Riak::Key.new(self, key).load!(response)
     end
-    
+
     def get_linked(bucket, key, options=nil)
       @client[bucket].key(key, options)
     end
-    
+
     def store(options)
       options[:bucket] = @name
       @client.put_request(options)
     end
-    
+
     # Deletes a key from the bucket
     # @param [String] key the key to delete
     # @param [Hash] options quorum options
     # @option options [Fixnum] :rw - the read/write quorum for the delete
-    def delete(key, options={})
-#      client.http.delete([204,404], client.prefix, escape(name), escape(key), options, {})
+    def delete(key, rw=nil)
+      key = key.name if key.is_a?(Riak::Key)
+
+      @client.del_request(@name, key, rw)
+    end
+
+    # Wipes out all keys stored in the bucket, as of execution
+    # @param [String] key the key to delete
+    # @param [Hash] options quorum options
+    # @option options [Fixnum] :rw - the read/write quorum for the delete
+    def destroy!(rw=nil)
+      keys!
+      
+      @keys.each do |key|
+        @client.del_request(@name, key, rw)
+      end
+      super.destroy
     end
 
     # @return [true, false] whether the bucket allows divergent siblings
@@ -149,7 +164,7 @@ module Riak
     # @param [Fixnum] value the number of replicas the bucket should keep of each object
     def n_val=(value)
       raise ArgumentError, t("fixnum_type", :value => value) unless value.is_a?(Fixnum)
-      
+
       @n_val = value
     end
 
@@ -157,11 +172,11 @@ module Riak
     def inspect
       "#<Riak::Bucket name=#{@name}, props={n_val=>#{@n_val}, allow_mult=#{@allow_mult}}>"
     end
-    
+
     # @return [String] a representation suitable for IRB and debugging output, including keys within this bucket
     def inspect!
       "#<Riak::Bucket name=#{@name}, props={n_val=>#{@n_val}, allow_mult=#{@allow_mult}}, keys=#{keys.inspect}>"
     end
-    
+
   end
 end

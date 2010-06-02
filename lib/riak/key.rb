@@ -171,10 +171,10 @@ module Riak
     # @option options [Fixnum] w (write quorum) how many replicas to write to before returning a successful response
     # @option options [Fixnum] dw how many replicas to commit to durable storage before returning a successful response
     # @option options [Boolean] return_body whether or not to have riak return the key, once saved.  default = true
-    # TODO: Add in content checking
+    # TODO: Add in content checking, perhaps?
     def save(options={})
       rcontent = options[:content]
-      
+
       if rcontent.nil?
         case contents.size
         when 0 then raise ArgumentError, t('empty_content')
@@ -182,12 +182,12 @@ module Riak
         else        raise SiblingError.new(self.name)
         end
       end
-      
+
       options[:content] = rcontent.to_pb  if      rcontent.is_a?(Riak::RiakContent)
       options[:content] = rcontent        if      rcontent.is_a?(Riak::RpbContent)
       options[:key]     = @name
       options[:vclock]  = @vclock         unless  @vclock.nil?
-      
+
       begin
         response = @bucket.store(options)
         load(response)

@@ -143,12 +143,19 @@ module Riak
       
       return(response)
     end
-    
-    # @return [String] A representation suitable for IRB and debugging output.
-#      def inspect
-#        "#<Client >"
-#      end
-    
+
+    def del_request(bucket, key, rw=nil)
+      request         = Riak::RpbDelRequest.new
+      request.bucket  = bucket
+      request.key     = key
+      request.rw    ||= rw
+
+      response        = rpc.request(
+                          Util::MessageCode::DEL_REQUEST,
+                          request
+                        )
+    end
+
     # Lists the buckets found in the Riak database
     # @raise [ReturnRespError] if the message response does not correlate with the message requested
     # @return [Array] list of buckets (String)
@@ -171,16 +178,12 @@ module Riak
       
       return(rpc.response.keys.each{|k| k})
     end
-    
-    
-    def rm_bucket(bucket, rw=nil)
-      
-    end
-    
-    def del_request(bucket, key, rw=nil)
-      
-    end
-    
+
+    # @return [String] A representation suitable for IRB and debugging output.
+#      def inspect
+#        "#<Client >"
+#      end
+
     private
 
   end # class Client

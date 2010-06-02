@@ -96,7 +96,7 @@ module Riak
     # Save the RiakContent instance in riak.
     # @option options [Fixnum] w (write quorum) how many replicas to write to before returning a successful response
     # @option options [Fixnum] dw how many replicas to commit to durable storage before returning a successful response
-    # @option options [Boolean] return_body whether or not to have riak return the key, once saved.  default = true
+    # @option options [true/false] return_body whether or not to have riak return the key, once saved.  default = true
     def save(options={})
       begin
         save!(options)
@@ -109,7 +109,7 @@ module Riak
     # Save the RiakContent instance in riak.  Raise/do not rescue on failure.
     # @option options [Fixnum] w (write quorum) how many replicas to write to before returning a successful response
     # @option options [Fixnum] dw how many replicas to commit to durable storage before returning a successful response
-    # @option options [Boolean] return_body whether or not to have riak return the key, once saved.  default = true
+    # @option options [true/false] return_body whether or not to have riak return the key, once saved.  default = true
     def save!(options={})
       options[:content] = self
       return(true) if @key.save(options)
