@@ -160,10 +160,10 @@ module Riak
     # @raise [ReturnRespError] if the message response does not correlate with the message requested
     # @return [Array] list of buckets (String)
     def buckets
-      rpc.request Util::MessageCode::LIST_BUCKETS_REQUEST
+      response = rpc.request Util::MessageCode::LIST_BUCKETS_REQUEST
       
       # iterate through each of the Strings in the Bucket list, returning an array of String(s)
-      @buckets = rpc.response.buckets.each{|b| b}
+      @buckets = response.buckets.each{|b| b}
     end
     
     # Lists the keys within their respective buckets, that are found in the Riak database
@@ -174,9 +174,9 @@ module Riak
       
       list_keys_request = RpbListKeysReq.new(:bucket => bucket)
       
-      rpc.request Util::MessageCode::LIST_KEYS_REQUEST, list_keys_request
+      response = rpc.request Util::MessageCode::LIST_KEYS_REQUEST, list_keys_request
       
-      return(rpc.response.keys.each{|k| k})
+      return(response.keys.each{|k| k})
     end
 
     # @return [String] A representation suitable for IRB and debugging output.

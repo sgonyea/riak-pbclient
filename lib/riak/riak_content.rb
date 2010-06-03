@@ -89,10 +89,10 @@ module Riak
         case @content_type
         when /json/
           @value = ActiveSupport::JSON.decode(contents[:value]) unless contents[:value].empty?
-        when "application/octet-stream"
+        when /octet/
           @value = Marshal.load(contents[:value]) unless contents[:value].empty?
         else
-          @value = contents[:value] unless contents[:value].empty?
+          @value = contents[:value] unless contents[:value].nil?
         end
 
         return(self)

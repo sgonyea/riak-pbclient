@@ -8,7 +8,9 @@ This is a Riak client, using protocol buffers, in Ruby
 
 == FEATURES/PROBLEMS:
 
-* FIX (list of features or problems)
+* No Map/Reduce
+* Links are not yet there
+* Syncs with iTunes
 
 == SYNOPSIS:
 

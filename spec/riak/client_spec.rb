@@ -97,15 +97,29 @@ describe Riak::Client do
   describe "sending and receiving protocol buffers" do
     before :each do
       @client = Riak::Client.new
+      @client.rpc.stub!(:status).and_return(true)
+      @client.rpc.stub!(:request).and_return(nil)
     end
     
     describe "basic communication with riak node" do
       it "should send a ping request and return true" do
+        @client.rpc.stub!(:request).with(
+            Riak::Util::MessageCode::PING_REQUEST
+          ).and_return('')
+
         @client.ping?.should          == true
       end
       
       it "should request the connected riak node's server info and return a Hash" do
         # test length or content?  Need to look at what are considered acceptable values
+        @client.rpc.stub!(:request).with(
+            Riak::Util::MessageCode::GET_SERVER_INFO_REQUEST
+          ).and_return(Riak::RpbGetServerInfoResp.new(
+            {   :node           => "riak@127.0.0.1",
+                :server_version => "0.10.1"
+            }
+          ))
+
         @client.info[:node].should            be_kind_of(String)
         @client.info[:server_version].should  be_kind_of(String)
       end
@@ -113,23 +127,63 @@ describe Riak::Client do
 
     describe "bucket operations and retrieval" do
       it "should send a request to list available bucket names and return a Protobuf::Field::FieldArray" do
+        @client.rpc.stub!(:request).with(
+            Riak::Util::MessageCode::LIST_BUCKETS_REQUEST
+          ).and_return(
+            Riak::RpbListBucketsResp.new(
+              {   :buckets => ["goog"] }
+          ))
+
         @client.buckets.should be_kind_of(Protobuf::Field::FieldArray)
       end
       
       it "should send a request with the bucket name and return a Riak::Bucket" do
+        @client.rpc.stub!(:request).with(
+            Riak::Util::MessageCode::GET_BUCKET_REQUEST,
+            Riak::RpbGetBucketReq.new(:bucket => "goog")
+          ).and_return(
+            Riak::RpbGetBucketResp.new(
+              {   :props  => {
+                  :allow_mult => false,
+                  :n_val      => 3
+                  }
+              }
+          ))
+          
         @client.bucket("goog").should be_kind_of(Riak::Bucket)
       end
       
       it "should send a request to list keys within a bucket and return a Protobuf::Field::FieldArray" do
+        @client.rpc.stub!(:request).with(
+            Riak::Util::MessageCode::LIST_KEYS_REQUEST,
+            Riak::RpbListKeysReq.new(:bucket => "goog")
+          ).and_return(
+            Riak::RpbListKeysResp.new(
+              {   :keys =>  ["2010-04-12", "2008-01-10", "2006-06-06"],
+                  :done =>  true
+              }
+          ))
         @client.keys_in("goog").should be_kind_of(Protobuf::Field::FieldArray)
       end
     end # describe "bucket operations and retrieval"
     
     describe "key operations and retrieval" do
+      before :each do
+        @client.rpc.stub!(:request).with(
+            Riak::Util::MessageCode::GET_REQUEST,
+            Riak::RpbGetReq.new(:bucket => "goog", :key => "2010-04-12", :r => nil)
+          ).and_return(
+            Riak::RpbGetResp.new(
+              {   :content  =>  [],
+                  :vclock   =>  ""
+              }
+          ))
+      end
+
       it "should send a request for a bucket/key pair and return a Riak::RpbGetResp" do
         @client.get_request("goog", "2010-04-12").should be_kind_of(Riak::RpbGetResp)
       end
-      
+
       it "should have a vclock attribute within Riak::RpbGetResp of that is a String" do
         @client.get_request("goog", "2010-04-12").vclock.should be_kind_of(String)
       end
