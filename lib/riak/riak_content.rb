@@ -134,6 +134,8 @@ module Riak
 
     # @return [Riak::RpbContent] An instance of a RpbContent, suitable for protobuf exchange
     def to_pb
+      rpb_content                   = Riak::RpbContent.new
+
       links                         = []
       @links.each do |link|
         pb_link       = link[1].to_pb_link
@@ -143,14 +145,30 @@ module Riak
 
       usermeta                      = []
       @usermeta.each do |key,value|
-        pb_pair         = Riak::RpbPair.new
-        pb_pair[:key]   = key
-        pb_pair[:value] = value
-        usermeta << pb_pair
+        pb_pair         =   Riak::RpbPair.new
+        pb_pair[:key]   =   key
+        pb_pair[:value] =   value
+        usermeta        <<  pb_pair
       end
 
-      rpb_content                   = Riak::RpbContent.new
-      rpb_content.value             = @value
+
+      case @content_type
+      when /json/
+        rpb_content.value = ActiveSupport::JSON.encode(@value)
+      when /yaml/
+        rpb_content.value = YAML.dump(@value)
+      when "application/octet-stream"
+        if @usermeta['ruby-serialization'] == "Marshal"
+          rpb_content.value = Marshal.dump(@value)
+        else
+          rpb_content.value = @value.to_s
+        end
+      else
+        rpb_content.value = @value.to_s
+      end
+
+
+#      rpb_content.value             = @value
       rpb_content.content_type      = @content_type     unless @content_type.nil?
       rpb_content.charset           = @charset          unless @charset.nil? # || @charset.empty?
       rpb_content.content_encoding  = @content_encoding unless @content_encoding.nil? # || @content_encoding.empty?

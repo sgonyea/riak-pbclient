@@ -138,7 +138,7 @@ module Riak
       @keys.each do |key|
         @client.del_request(@name, key, rw)
       end
-      super.destroy
+#      super.destroy
     end
 
     # @return [true, false] whether the bucket allows divergent siblings

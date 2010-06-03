@@ -12,6 +12,27 @@ This is a Riak client, using protocol buffers, in Ruby
 
 == SYNOPSIS:
 
+Inject the 'goog.csv' on the Fast Track into riak:
+
+  rc = Riak::Client.new
+
+  rc.ping?
+
+  require 'csv'
+
+  client = Riak::Client.new
+  bucket = rc['goog']
+
+  CSV.foreach('goog.csv', :headers => true) do |row|
+    puts row[0].to_s
+    key = bucket[row[0].to_s]
+    key.content.content_type = "application/json"
+    key.content.value = {"Open" => row[1], "High" => row[2], "Low" => row[3], "Close" => row[4], "Volume" => row[5], "Adj Close" => row[6]}
+    key.content.save
+  end
+
+------
+
   irb(main):001:0> require 'lib/riak'
    => true
   irb(main):002:0> rc = Riak::Client.new
