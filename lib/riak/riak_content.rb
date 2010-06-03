@@ -77,7 +77,6 @@ module Riak
     # @return [RiakContent] self
     def load(contents)
       if contents.is_a?(Riak::RpbContent) or contents.is_a?(Hash)
-        @value            = contents[:value]            unless contents[:value].empty?
         @content_type     = contents[:content_type]     unless contents[:content_type].empty?
         @charset          = contents[:charset]          unless contents[:charset].empty?
         @content_encoding = contents[:content_encoding] unless contents[:content_encoding].empty?
@@ -86,6 +85,15 @@ module Riak
         @last_mod         = contents[:last_mod]
         @last_mod_usecs   = contents[:last_mod_usecs]
         self.usermeta     = contents[:usermeta]         unless contents[:usermeta].empty?
+
+        case @content_type
+        when /json/
+          @value = ActiveSupport::JSON.decode(contents[:value]) unless contents[:value].empty?
+        when "application/octet-stream"
+          @value = Marshal.load(contents[:value]) unless contents[:value].empty?
+        else
+          @value = contents[:value] unless contents[:value].empty?
+        end
 
         return(self)
       end
@@ -151,22 +159,15 @@ module Riak
         usermeta        <<  pb_pair
       end
 
-
       case @content_type
       when /json/
         rpb_content.value = ActiveSupport::JSON.encode(@value)
-      when /yaml/
-        rpb_content.value = YAML.dump(@value)
-      when "application/octet-stream"
-        if @usermeta['ruby-serialization'] == "Marshal"
-          rpb_content.value = Marshal.dump(@value)
-        else
-          rpb_content.value = @value.to_s
-        end
-      else
-        rpb_content.value = @value.to_s
+      when "", nil
+        @content_type = "application/octet-stream"
+        rpb_content.value = Marshal.dump(@value)
+      else 
+        rpb_content.value = Marshal.dump(@value) #@value.to_s
       end
-
 
 #      rpb_content.value             = @value
       rpb_content.content_type      = @content_type     unless @content_type.nil?
