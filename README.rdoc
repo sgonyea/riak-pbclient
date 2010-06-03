@@ -12,6 +12,10 @@ This is a Riak client, using protocol buffers, in Ruby
 
 == SYNOPSIS:
 
+This is a work in progress and I am current improving the rspec and the documentation, so-as to minimize the number of rage strokes that I cause.  I wasn't sure how to approach some of my tests, so I plugged in some assumptions about data.  This was to let me continue playing around / figuring out stuff, without creating some kind of a "no pants dance" (pants=tests) zone.
+
+I will now rejigger my efforts and unfubar some of the tests+documentation.  Sorry for the buzzwords.
+
 Inject the 'goog.csv' on the Fast Track into riak:
 
   rc = Riak::Client.new
@@ -69,17 +73,18 @@ Inject the 'goog.csv' on the Fast Track into riak:
 
 == REQUIREMENTS:
 
-* FIX (list of requirements)
+* Rspec 2.0.0.beta.9
+* ActiveSupport >= 3.0.0.beta3
 
 == INSTALL:
 
-* FIX (sudo gem install, anything else)
+* Don't do it.  Not yet.
 
 == LICENSE:
 
 (The MIT License)
 
-Copyright (c) 2010 Scott G.
+Copyright (c) 2010 Scott Gonyea
 
 Permission is hereby granted, free of charge, to any person obtaining
 a copy of this software and associated documentation files (the

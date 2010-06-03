@@ -124,6 +124,9 @@ module Riak
       return(false) # Create and raise Error message for this?  Extend "Failed Request"?
     end
 
+    def link_to(bucket, key)
+    end
+
     def links=(pb_links)
       @links.clear
 
