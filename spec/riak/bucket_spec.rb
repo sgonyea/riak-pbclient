@@ -20,6 +20,7 @@ describe Riak::Bucket do
     end
 
     it "should default with the client and name, and empty n_val or allow_mult" do
+
       bucket = Riak::Bucket.new(@client, "test")
       bucket.client.should      == @client
       bucket.name.should        == "test"
@@ -47,14 +48,26 @@ describe Riak::Bucket do
   describe "when initialized from the Client" do
     before :each do
       @client = Riak::Client.new
+      @client.rpc.stub!(:request).and_return(nil)
     end
 
     it "should have set the properties" do
+      @client.rpc.stub!(:request).with(
+          Riak::Util::MessageCode::GET_BUCKET_REQUEST,
+          Riak::RpbGetBucketReq.new(:bucket => "goog")
+        ).and_return(
+          Riak::RpbGetBucketResp.new(
+            {   :props  => {
+                :allow_mult => false,
+                :n_val      => 3
+                }
+            }
+        ))
       bucket = @client["goog"]
       bucket.should             be_kind_of(Riak::Bucket)
       bucket.client.should      == @client
       bucket.name.should        == "goog"
-      bucket.n_val.should       be_kind_of(Fixnum)
+      bucket.n_val.should       == 3
       bucket.allow_mult.should  == false
     end
   end # describe "when initialized from the Client"
@@ -62,14 +75,43 @@ describe Riak::Bucket do
   describe "key retrieval" do
     before :each do
       @client = Riak::Client.new
+      @client.rpc.stub!(:request).with(
+          Riak::Util::MessageCode::GET_BUCKET_REQUEST,
+          Riak::RpbGetBucketReq.new(:bucket => "goog")
+        ).and_return(
+          Riak::RpbGetBucketResp.new(
+            {   :props  => {
+                :allow_mult => false,
+                :n_val      => 3
+                }
+            }
+        ))
       @bucket = @client["goog"]
     end
 
     it "should list the keys within the bucket" do
+      @client.rpc.stub!(:request).with(
+          Riak::Util::MessageCode::LIST_KEYS_REQUEST,
+          Riak::RpbListKeysReq.new(:bucket => "goog")
+        ).and_return(
+          Riak::RpbListKeysResp.new(
+            {   :keys =>  ["2010-04-12", "2008-01-10", "2006-06-06"],
+                :done =>  true
+            }
+        ))
       @bucket.keys.should be_kind_of(Protobuf::Field::FieldArray)
     end
 
     it "should return a key, when requested" do
+      @client.rpc.stub!(:request).with(
+          Riak::Util::MessageCode::GET_REQUEST,
+          Riak::RpbGetReq.new(:bucket => "goog", :key => "2010-04-12", :r => nil)
+        ).and_return(
+          Riak::RpbGetResp.new(
+            {   :content  =>  [],
+                :vclock   =>  ""
+            }
+        ))
       @bucket["2010-04-12"].should be_kind_of(Riak::Key)
     end
   end # describe "key retrieval"

@@ -165,21 +165,18 @@ module Riak
       case @content_type
       when /json/
         rpb_content.value = ActiveSupport::JSON.encode(@value)
-      when "", nil
+      when /octet/, "", nil
         @content_type = "application/octet-stream"
         rpb_content.value = Marshal.dump(@value)
       else 
-        rpb_content.value = Marshal.dump(@value) #@value.to_s
+        rpb_content.value = @value #@value.to_s
       end
 
-#      rpb_content.value             = @value
       rpb_content.content_type      = @content_type     unless @content_type.nil?
       rpb_content.charset           = @charset          unless @charset.nil? # || @charset.empty?
       rpb_content.content_encoding  = @content_encoding unless @content_encoding.nil? # || @content_encoding.empty?
       rpb_content.vtag              = @vtag             unless @vtag.nil?
       rpb_content.links             = links             unless links.empty?
-      rpb_content.last_mod          = @last_mod
-      rpb_content.last_mod_usecs    = @last_mod_usecs
       rpb_content.usermeta          = usermeta          unless usermeta.empty?
 
       return(rpb_content)

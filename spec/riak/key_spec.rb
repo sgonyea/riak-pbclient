@@ -17,6 +17,17 @@ describe Riak::Key do
   describe "when directly initializing" do
     before :each do
       @client = Riak::Client.new
+      @client.rpc.stub!(:request).with(
+          Riak::Util::MessageCode::GET_BUCKET_REQUEST,
+          Riak::RpbGetBucketReq.new(:bucket => "goog")
+        ).and_return(
+          Riak::RpbGetBucketResp.new(
+            {   :props  => {
+                :allow_mult => false,
+                :n_val      => 3
+                }
+            }
+        ))
       @bucket = @client["goog"]
     end
 
@@ -29,10 +40,19 @@ describe Riak::Key do
     end
 
     it "should serialize into a Key Protocol Buffer (RpbPutReq)" do
+      @client.rpc.stub!(:request).with(
+          Riak::Util::MessageCode::GET_REQUEST,
+          Riak::RpbGetReq.new(:bucket => "goog", :key => "2010-04-12", :r => nil)
+        ).and_return(
+          Riak::RpbGetResp.new(
+            {   :content  =>  [Riak::RpbContent.new],
+                :vclock   =>  "k\xCEa```\xCC`\xCA\x05R,\xACL\xF7^e0%2\xE6\xB12\xC4s\xE6\x1D\xE5\xCB\x02\x00"
+            }
+        ))
       key                   =   @bucket["2010-04-12"] # Riak::Key.new(@bucket, "test")
       pb_put                =   key.to_pb_put
       pb_put.should         be_kind_of(Riak::RpbPutReq)
-#      pb_put.vclock.should  ==  "k\xCEa```\xCC`\xCA\x05R,\xACL\xF7^e0%2\xE6\xB12\xC4s\xE6\x1D\xE5\xCB\x02\x00"
+      pb_put.vclock.should  ==  "k\xCEa```\xCC`\xCA\x05R,\xACL\xF7^e0%2\xE6\xB12\xC4s\xE6\x1D\xE5\xCB\x02\x00"
     end
 
     it "should serialize into a Link Protocol Buffer (RpbLink)" do
