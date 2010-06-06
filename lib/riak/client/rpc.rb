@@ -76,7 +76,7 @@ module Riak
                                                 @set_client_id.serialize_to_string)
 
         socket.send(@set_c_id_req, 0)
-        set_c_id_resp       = socket.recv(20000)
+        set_c_id_resp       = socket.recv(20480)
 
         resp_code, resp_msg = decode_message(set_c_id_resp)
 
@@ -98,7 +98,7 @@ module Riak
             @req_message  = assemble_request mc, (pb_msg.serialize_to_string rescue '')
 
             socket.send(@req_message, 0)
-            self.response = socket.recv(2000)
+            self.response = socket.recv(20480)
 
           end while(false == (@response.done rescue true))
         end # with_socket

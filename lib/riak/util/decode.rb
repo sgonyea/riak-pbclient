@@ -34,7 +34,7 @@ module Riak
           mrange  = (pb_len+4)..(message.size-1)    # range for any remaining portions of message
 
           if(prange.count != message[prange].size)
-            raise FailedExchange.new(prange, message[prange].size, message[prange], "decode_error")
+            raise FailedExchange.new(prange.count, message[prange].size, message[prange], "decode_error")
           end
 
           pb_msg  = pb_msg + message[prange]

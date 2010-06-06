@@ -249,6 +249,11 @@ module Riak
       return(pb_link)
     end
 
+    def to_link
+      [@bucket.name, @name]
+    end
+    alias :to_input :to_link
+
     # Deletes this key from its Bucket container
     # @param [Hash] options quorum options
     # @option options [Fixnum] :rw - the read/write quorum for the delete

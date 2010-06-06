@@ -64,6 +64,7 @@ module Riak
 
       @key              = key unless key.nil?
       @links            = Set.new
+      @_links           = []
       @usermeta         = {}
       
       load(contents) unless contents.empty?
@@ -129,18 +130,26 @@ module Riak
 
     def links=(pb_links)
       @links.clear
+      @_links.clear
 
       pb_links.each do |pb_link|
         if @key.nil?
-          link = [pb_link.tag, pb_link.bucket, pb_link.key]
+#          link  = [pb_link.tag, pb_link.bucket, pb_link.key]
+          link = _link = [pb_link.tag, pb_link.bucket, pb_link.key]
         else
-          link = [pb_link.tag, @key.get_linked(pb_link.bucket, pb_link.key, {:safely => true})]
+          link  = [pb_link.tag, @key.get_linked(pb_link.bucket, pb_link.key, {:safely => true})]
+          _link = [pb_link.tag, pb_link.bucket, pb_link.key]
         end
 
         @links.add(link)
+        @_links << _link
       end
 
       return(@links)
+    end
+
+    def links
+      @links
     end
 
     # @return [Riak::RpbContent] An instance of a RpbContent, suitable for protobuf exchange
@@ -162,14 +171,18 @@ module Riak
         usermeta        <<  pb_pair
       end
 
-      case @content_type
-      when /json/
-        rpb_content.value = ActiveSupport::JSON.encode(@value)
-      when /octet/, "", nil
-        @content_type = "application/octet-stream"
-        rpb_content.value = Marshal.dump(@value)
-      else 
-        rpb_content.value = @value #@value.to_s
+      catch(:redo) do
+        case @content_type
+        when /octet/
+          rpb_content.value = Marshal.dump(@value) unless @value.nil?
+        when /json/
+          rpb_content.value = ActiveSupport::JSON.encode(@value) unless @value.nil?
+        when "", nil
+          @content_type     = "application/json"
+          redo
+        else
+          rpb_content.value = @value.to_s unless @value.nil?
+        end
       end
 
       rpb_content.content_type      = @content_type     unless @content_type.nil?
@@ -190,7 +203,7 @@ module Riak
           (@charset.nil?)           ? nil : "charset=#{@charset.inspect}",
           (@content_encoding.nil?)  ? nil : "content_encoding=#{@content_encoding.inspect}",
           (@vtag.nil?)              ? nil : "vtag=#{@vtag.inspect}",
-          (@links.nil?)             ? nil : "links=#{@links.inspect}",
+          (@links.nil?)             ? nil : "links=#{@_links.inspect}",
           (@last_mod.nil?)          ? nil : "last_mod=#{last_mod.inspect}",
           (@last_mod_usecs.nil?)    ? nil : "last_mod_usecs=#{last_mod_usecs.inspect}",
           (@usermeta.nil?)          ? nil : "usermeta=#{@usermeta.inspect}"

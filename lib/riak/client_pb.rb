@@ -337,8 +337,8 @@ module Riak
   end
   class RpbMapRedResp < ::Protobuf::Message
     defined_in __FILE__
-    optional :uint32, :phase, 1
-    optional :bytes, :response, 2
+    repeated :uint32, :phase, 1
+    repeated :bytes, :response, 2
     optional :bool, :done, 3
   end
   class RpbContent < ::Protobuf::Message
