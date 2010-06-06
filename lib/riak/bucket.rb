@@ -109,10 +109,21 @@ module Riak
       Riak::Key.new(self, key).load!(response)
     end
 
+    # Retrieves a Key from the given Bucket. Originally written for link retrieval.
+    # @param [String] bucket the name of the bucket, in which the Key is contained
+    # @param [String] key the name of the key to retrieve
+    # @option options [Fixnum] :quorum read quorum- num of replicas need to agree when retrieving the object
+    # @return [Riak::Key] the object
     def get_linked(bucket, key, options=nil)
       @client[bucket].key(key, options)
     end
 
+    # Retrieves a Key from the given Bucket. Originally written for link retrieval.
+    # Inserts a key in this bucket's namespace, into riak.
+    # @option options [Fixnum] :w (write quorum) how many replicas to write to before returning a successful response.
+    # @option options [Fixnum :dw how many replicas to commit to durable storage before returning a successful response.
+    # @option options [Boolean] :return_body whether to return the contents of the stored object.
+    # @return [RpbPutResp] the response confirming Key storage and (optionally) the Key's updated/new data.
     def store(options)
       options[:bucket] = @name
       @client.put_request(options)

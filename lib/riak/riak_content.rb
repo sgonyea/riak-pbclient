@@ -125,7 +125,7 @@ module Riak
       return(false) # Create and raise Error message for this?  Extend "Failed Request"?
     end
 
-    def link_to(bucket, key)
+    def link_key(bucket, key, tag)
     end
 
     def links=(pb_links)

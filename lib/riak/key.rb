@@ -92,15 +92,21 @@ module Riak
       return(self)
     end
 
+    # Indicates whether or not the Key is empty
+    # @return [Boolean] true or false, whether or not the vclock/content is empty
     def empty?
-      return(true) if @vclock.nil? and @contents.empty?
+      return(true) if @vclock.empty? && (@contents.nil? || @contents.empty?)
       return(false)
     end
 
+    # Refreshes the Key and its content with fresh data, if there's concern that separate updates may have taken place.
+    # @return 
     def reload!
 
     end
 
+    # Retrieves any Keys that are linked to, inside RiakContent elements.
+    # @return [Key] the Key to which the RiakContent is linked (may be empty if it does not exist)
     def get_linked(bucket, key, options={})
       @bucket.get_linked(bucket, key, options)
     end
@@ -249,6 +255,8 @@ module Riak
       return(pb_link)
     end
 
+    # Converts this Key into an array, that can be used by a RiakContent, if desired.
+    # @return [Array] contains the name of the bucket and the name of the key
     def to_link
       [@bucket.name, @name]
     end
