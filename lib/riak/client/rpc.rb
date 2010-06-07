@@ -26,6 +26,8 @@ module Riak
       include Riak::Util::Translation
       include Riak::Util::Encode
       include Riak::Util::Decode
+      
+      RECV_LIMIT=1638400
 
       attr_reader :req_message, :response, :resp_message_codes, :resp_message, :status
 
@@ -76,7 +78,7 @@ module Riak
                                                 @set_client_id.serialize_to_string)
 
         socket.send(@set_c_id_req, 0)
-        set_c_id_resp       = socket.recv(20480)
+        set_c_id_resp       = socket.recv(RECV_LIMIT)
 
         resp_code, resp_msg = decode_message(set_c_id_resp)
 
@@ -98,7 +100,7 @@ module Riak
             @req_message  = assemble_request mc, (pb_msg.serialize_to_string rescue '')
 
             socket.send(@req_message, 0)
-            self.response = socket.recv(20480)
+            self.response = socket.recv(RECV_LIMIT)
 
           end while(false == (@response.done rescue true))
         end # with_socket

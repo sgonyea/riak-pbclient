@@ -8,15 +8,14 @@ This is a Riak client, using protocol buffers, in Ruby
 
 == FEATURES/PROBLEMS:
 
-* No Map/Reduce
-* Links are not yet there
-* Syncs with iTunes
+* Map/Reduce now works!
+* Links basically work, too!
 
 == SYNOPSIS:
 
 This is a work in progress and I am current improving the rspec and the documentation, so-as to minimize the number of rage strokes that I cause.  I wasn't sure how to approach some of my tests, so I plugged in some assumptions about data.  This was to let me continue playing around / figuring out stuff, without creating some kind of a "no pants dance" (pants=tests) zone.
 
-I will now rejigger my efforts and unfubar some of the tests+documentation.  Sorry for the buzzwords.
+I will now rejigger my efforts and unfubar some of the tests+documentation.  Sorry for the terminology.
 
 Inject the 'goog.csv' on the Fast Track into riak:
 

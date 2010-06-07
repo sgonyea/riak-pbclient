@@ -103,26 +103,24 @@ module Riak
     end
 
     # Add a link phase to the job. Link phases follow links attached to objects automatically (a special case of map).
-    # @overload link(walk_spec, options={})
-    #   @param [WalkSpec] walk_spec a WalkSpec that represents the types of links to follow
-    #   @param [Hash] options extra options for the phase (see {Phase#initialize})
-    # @overload link(bucket, tag, keep, options={})
-    #   @param [String, nil] bucket the bucket to limit links to
-    #   @param [String, nil] tag the tag to limit links to
-    #   @param [Boolean] keep whether to keep results of this phase (overrides the phase options)
-    #   @param [Hash] options extra options for the phase (see {Phase#initialize})
-    # @overload link(options)
-    #   @param [Hash] options options for both the walk spec and link phase
-    #   @see WalkSpec#initialize
+    # @param [Hash] params represents the types of links to follow
     # @return [MapReduce] self
-    # @see Phase#initialize
-    def link(*params)
-      options = params.extract_options!
-      walk_spec_options = options.slice!(:type, :function, :language, :arg) unless params.first
-      walk_spec = WalkSpec.normalize(params.shift || walk_spec_options).first
-      @query << Phase.new({:type => :link, :function => walk_spec}.merge(options))
-      self
+    def walk(params={})
+      bucket  ||= params[:bucket]
+      tag     ||= params[:tag]
+      keep      = params[:keep] || false
+
+      function  = {
+        "link"    => {}
+      }
+      function["link"]["bucket"]  = bucket  unless bucket.nil?
+      function["link"]["tag"]     = tag     unless tag.nil?
+
+      @query << Phase.new({:type => :link, :function => function, :keep => keep})
+
+      return(self)
     end
+    alias :link :walk
 
     # Sets the timeout for the map-reduce job.
     # @param [Fixnum] value the job timeout, in milliseconds
@@ -142,7 +140,7 @@ module Riak
     # @return [Array<Array>] similar to link-walking, each element is an array of results from a phase where "keep" is true. If there is only one "keep" phase, only the results from that phase will be returned.
     def run
       response = @client.map_reduce_request(to_json, "application/json")
-      ActiveSupport::JSON.decode(response[:body])
+#      ActiveSupport::JSON.decode(response[:body])
     end
 
     # Represents an individual phase in a map-reduce pipeline. Generally you'll want to call
@@ -194,8 +192,6 @@ module Riak
           @language = "javascript"
         when String
           @language = "javascript"
-        when WalkSpec
-          raise ArgumentError, t("walk_spec_invalid_unless_link") unless type == :link
         else
           raise ArgumentError, t("invalid_function_value", :value => value.inspect)
         end
@@ -227,8 +223,7 @@ module Riak
                   defaults.merge("module" => function[0], "function" => function[1])
                 end
               when :link
-                spec = WalkSpec.normalize(function).first
-                {"bucket" => spec.bucket, "tag" => spec.tag, "keep" => spec.keep || keep}
+                function
               end
         obj["arg"] = arg if arg
         { type => obj }

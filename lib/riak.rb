@@ -18,6 +18,7 @@ module Riak
   autoload :Key,              'riak/key'
   autoload :RiakContent,      'riak/riak_content'
   autoload :Bucket,           'riak/bucket'
+  autoload :MapReduce,        'riak/map_reduce'
 
   # Exceptions
   autoload :FailedRequest,    "riak/failed_request"

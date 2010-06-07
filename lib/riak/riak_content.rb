@@ -23,40 +23,40 @@ module Riak
   class RiakContent
     include Util::Translation
     include Util::MessageCode
-    
+
     attr_accessor   :key
-    
+
     # @return [String] the data stored in Riak at this object's key.  Varies in format by content-type.
     attr_accessor   :value
     alias_attribute :data, :value
-    
+
     # @return [String] the MIME content type of the object
     attr_accessor   :content_type
-    
+
     # @return [String] the charset of the object
     attr_accessor   :charset
-    
+
     # @return [String] the content encoding of the object
     attr_accessor   :content_encoding
-    
+
     # @return [String] the vtag of the object
     attr_accessor   :vtag
-    
+
     # @return [Set<Link>] an Set of {Riak::Link} objects for relationships between this object and other resources
     attr_accessor   :links
-    
+
     # @return [Time] the Last-Modified header from the most recent HTTP response, useful for caching and reloading
     attr_accessor   :last_mod
     alias_attribute :last_modified, :last_mod
-    
+
     # @return [Time] the Last-Modified header from the most recent HTTP response, useful for caching and reloading
     attr_accessor   :last_mod_usecs
     alias_attribute :last_modified_usecs, :last_mod_usecs
-    
+
     # @return [Hash] a hash of any user-supplied metadata, consisting of a key/value pair
     attr_accessor   :usermeta
     alias_attribute :meta, :usermeta
-    
+
     # Create a new riak_content object manually
     # @see Key#content
     def initialize(key=nil, contents={})
@@ -66,9 +66,9 @@ module Riak
       @links            = Set.new
       @_links           = []
       @usermeta         = {}
-      
+
       load(contents) unless contents.empty?
-      
+
       yield self if block_given?
     end
 
