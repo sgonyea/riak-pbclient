@@ -25,6 +25,7 @@ module Riak
   autoload :FailedExchange,   "riak/failed_exchange"
   autoload :SiblingError,     "riak/sibling_error"
 
+  # Mixins
   module Util
     autoload :Translation,    'riak/util/translation'
     autoload :MessageCode,    'riak/util/message_code'
