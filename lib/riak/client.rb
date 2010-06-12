@@ -21,14 +21,16 @@ module Riak
     attr_reader :bucket_cache
     attr_reader :node
     attr_reader :server_version
+    attr_reader :client_id
 
     # Creates a client connection to Riak's Protobuf Listener
     # @param [String] options configuration options for the client
     # @param [String] host ('127.0.0.1') The host or IP address for the Riak endpoint
     # @param [Fixnum] port (8087) The port of the Riak protobuf listener endpoint
     def initialize(options={})
-      self.host         = options[:host]  || "127.0.0.1"
-      self.port         = options[:port]  || 8087
+      self.host         = options[:host]      ||      "127.0.0.1"
+      self.port         = options[:port]      ||      8087
+      self.client_id    = options[:client_id] unless  options[:client_id].nil?
       @w                = options[:w]
       @dw               = options[:dw]
       @buckets          = []
@@ -53,10 +55,26 @@ module Riak
       @port = value
     end
 
+    # Set the client ID for this client. Must be a string or Fixnum value 0 =< value < MAX_CLIENT_ID.
+    # @param [String, Fixnum] value The internal client ID used by Riak to route responses
+    # @raise [ArgumentError] when an invalid client ID is given
+    # @return [String] the assigned client ID
+    def client_id=(value)
+      @client_id = case value
+                   when 0...MAX_CLIENT_ID
+                     b64encode(value)
+                   when String
+                     value
+                   else
+                     raise ArgumentError, t("invalid_client_id", :max_id => MAX_CLIENT_ID)
+                   end
+    end
+
     # Establish a connection to the riak node, and store the Rpc instance
     # @return [Riak::Client::Rpc] the Rpc instance that handles connections to the riak node
-    def rpc
-      @rpc ||= Rpc.new(self)
+    def rpc(options={})
+      options[:client_id] ||= @client_id if @client_id
+      @rpc                ||= Rpc.new(self)
     end
 
     # Tests connectivity with the Riak host.
@@ -195,11 +213,14 @@ module Riak
     end
 
     # @return [String] A representation suitable for IRB and debugging output.
-#      def inspect
-#        "#<Client >"
-#      end
+      def inspect
+        "#<Client >"
+      end
 
     private
+    def b64encode(n)
+      Base64.encode64([n].pack("N")).chomp
+    end
 
   end # class Client
 end # module Riak

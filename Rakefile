@@ -3,6 +3,7 @@ gem 'hoe', '>= 2.1.0'
 require 'hoe'
 require 'fileutils'
 require './lib/riak'
+require 'metric_fu'
 
 Hoe.plugin :newgem
 # Hoe.plugin :website

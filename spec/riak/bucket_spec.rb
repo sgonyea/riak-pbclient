@@ -20,7 +20,6 @@ describe Riak::Bucket do
     end
 
     it "should default with the client and name, and empty n_val or allow_mult" do
-
       bucket = Riak::Bucket.new(@client, "test")
       bucket.client.should      == @client
       bucket.name.should        == "test"

@@ -70,8 +70,8 @@ module Riak
       raise ArgumentError, t("fixnum_invalid", :num => options[:r]) unless options[:r].is_a?(NilClass) or options[:r].is_a?(Fixnum)
       raise ArgumentError, t("string_invalid", :string => key)      unless key.is_a?(String)
 
-      if options[:safely] == true
-        return(@key_cache[key]) unless @key_cache[key].empty?
+      if options[:safely] == true and not @key_cache[key].empty?
+        return(@key_cache[key])
       end
 
       response = @client.get_request @name, key, options[:r]

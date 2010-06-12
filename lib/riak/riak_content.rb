@@ -8,6 +8,7 @@ module Riak
     include Util::Translation
     include Util::MessageCode
 
+    # @return [Key] the key in which this RiakContent is stored.
     attr_accessor   :key
 
     # @return [String] the data stored in Riak at this object's key.  Varies in format by content-type.
@@ -71,13 +72,15 @@ module Riak
         @last_mod_usecs   = contents[:last_mod_usecs]
         self.usermeta     = contents[:usermeta]         unless contents[:usermeta].empty?
 
-        case @content_type
-        when /json/
-          @value = ActiveSupport::JSON.decode(contents[:value]) unless contents[:value].empty?
-        when /octet/
-          @value = Marshal.load(contents[:value]) unless contents[:value].empty?
-        else
-          @value = contents[:value] unless contents[:value].nil?
+        if not contents[:value].nil?
+          case @content_type
+          when /json/
+            @value = ActiveSupport::JSON.decode(contents[:value]) 
+          when /octet/
+            @value = Marshal.load(contents[:value])
+          else
+            @value = contents[:value]
+          end
         end
 
         return(self)
@@ -109,16 +112,25 @@ module Riak
       return(false) # Create and raise Error message for this?  Extend "Failed Request"?
     end
 
+    # Internalizes a link to a Key, which will be saved on next call to save
+    # @param [String] bucket name of the bucket, in which the key is stored
+    # @param [String] key name of the key, in the given bucket, to be linked to
+    # @param [String] tag how to name the link, to the bucket/key in riak
+    # @return [Set] links that this RiakContent points to
     def link_key(bucket, key, tag)
+      link  = [pb_link.tag, @key.get_linked(pb_link.bucket, pb_link.key, {:safely => true})]
+      @links.add(link)
     end
 
+    # Set the links to other Key in riak.
+    # @param [RpbGetResp, RpbPutResp] contains the tag/bucket/key of a given link
+    # @return [Set] links that this RiakContent points to
     def links=(pb_links)
       @links.clear
       @_links.clear
 
       pb_links.each do |pb_link|
         if @key.nil?
-#          link  = [pb_link.tag, pb_link.bucket, pb_link.key]
           link = _link = [pb_link.tag, pb_link.bucket, pb_link.key]
         else
           link  = [pb_link.tag, @key.get_linked(pb_link.bucket, pb_link.key, {:safely => true})]
@@ -132,12 +144,10 @@ module Riak
       return(@links)
     end
 
-    def links
-      @links
-    end
-
     # @return [Riak::RpbContent] An instance of a RpbContent, suitable for protobuf exchange
     def to_pb
+      raise RuntimeError t('value_empty') if @value.nil?
+
       rpb_content                   = Riak::RpbContent.new
 
       links                         = []
@@ -158,14 +168,14 @@ module Riak
       catch(:redo) do
         case @content_type
         when /octet/
-          rpb_content.value = Marshal.dump(@value) unless @value.nil?
+          rpb_content.value = Marshal.dump(@value)
         when /json/
-          rpb_content.value = ActiveSupport::JSON.encode(@value) unless @value.nil?
+          rpb_content.value = ActiveSupport::JSON.encode(@value)
         when "", nil
           @content_type     = "application/json"
           redo
         else
-          rpb_content.value = @value.to_s unless @value.nil?
+          rpb_content.value = @value.to_s
         end
       end
 

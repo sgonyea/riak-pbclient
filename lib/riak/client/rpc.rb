@@ -13,7 +13,7 @@ module Riak
       include Riak::Util::Translation
       include Riak::Util::Encode
       include Riak::Util::Decode
-      
+
       RECV_LIMIT=1638400
 
       attr_reader :req_message, :response, :resp_message_codes, :resp_message, :status
