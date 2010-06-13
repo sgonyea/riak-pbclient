@@ -16,32 +16,66 @@ This is a Ruby client for Riak, using protocol buffers instead of REST.  It offe
 
 This is a work in progress and I am current improving the rspec and the documentation, but please have fun and give me some feedback.  The below examples 
 
-Connect to riak and ping it:
+=== Connect to riak and ping it:
 
   >> client = Riak::Client.new # Riak::Client.new({:host => "ubuntu01", :port => 1234})
   => #<Riak::Client:0x0000010328a040 @host="127.0.0.1", @port=8087, @w=nil, @dw=nil, @buckets=[], @bucket_cache={}>
   >> client.ping?
   => true
 
-List buckets (probably shouldn't in production):
+=== List Buckets within riak:
+<i>Not for production</i>
 
   >> client = Riak::Client.new
   => #<Riak::Client:0x00000101439a78 @host="127.0.0.1", @port=8087, @w=nil, @dw=nil, @buckets=[], @bucket_cache={}>
   >> client.buckets
   => ["hb", "goog"]
 
-Fetch a Bucket:
+=== Fetch a Bucket:
 
   >> bucket = client["goog"]
   => #<Riak::Bucket name=goog, props={n_val=>3, allow_mult=false}>
 
-Fetch a Key:
+=== Fetch a Key:
 
-  >> bucket["2010-04-12"]
-  => #<Riak::Key name="2010-04-12", vclock="k\xCEa```\xCC`\xCA\x05R,\fG\x8D|3\x98\x12\x19\xF3X\x19\xCA\xFC\xEB\x8F\xF2e\x01\x00", contents=[#<#Riak::RiakContent value={"Open"=>"567.35", "High"=>"574.00", "Low"=>"566.22", "Close"=>"572.73", "Volume"=>"2352400", "Adj Close"=>"572.73"}, content_type="application/json", vtag="47MILXxnsXofyBsZjcC52h", links=[], last_mod=1275777910, last_mod_usecs=971172, usermeta={}>]>
+  >> key = bucket["2010-04-12"]
+  => #<Riak::Key name="2010-04-12", vclock="k\xCEa```\xCC`\xCA\x05R,\xCC\xF3{*2\x98\x12\x19\xF3X\x19N\xCF\xEB8\xCA\x97\x05\x00", contents=[#<#Riak::RiakContent value={"Date"=>Mon, 12 Apr 2010, "Open"=>"567.35", "High"=>"574.00", "Low"=>"566.22", "Close"=>"572.73", "Volume"=>"2352400", "Adj Close"=>"572.73"}, content_type="application/json", vtag="3pbhcnmUtPZvXBSCmo5ESs", links=[], last_mod=1276388043, last_mod_usecs=65345, usermeta={}>]>
 
-Load the GOOG stocks from the riak Fast Track:
-(https://wiki.basho.com/display/RIAK/Loading+Data+and+Running+MapReduce+Queries)
+=== Fetch a Key's Content:
+<i>Differs from the REST client.  Key+RiakContent = ROjbect</i>
+
+  >> rcon = key.content
+  => #<#Riak::RiakContent value={"Date"=>Mon, 12 Apr 2010, "Open"=>"567.35", "High"=>"574.00", "Low"=>"566.22", "Close"=>"572.73", "Volume"=>"2352400", "Adj Close"=>"572.73"}, content_type="application/json", vtag="3pbhcnmUtPZvXBSCmo5ESs", links=[], last_mod=1276388043, last_mod_usecs=65345, usermeta={}>
+
+=== Play with the RiakContent's data and save it:
+
+  >> rcon.value
+  => {"Date"=>Mon, 12 Apr 2010, "Open"=>"567.35", "High"=>"574.00", "Low"=>"566.22", "Close"=>"572.73", "Volume"=>"2352400", "Adj Close"=>"572.73"}
+  >> rcon.value.class
+  => Hash
+  >> rcon.value["Date"]
+  => Mon, 12 Apr 2010
+  >> rcon.value["Date"] += 1.day
+  => Tue, 13 Apr 2010
+  >> rcon
+  => #<#Riak::RiakContent value={"Date"=>Tue, 13 Apr 2010, "Open"=>"567.35", "High"=>"574.00", "Low"=>"566.22", "Close"=>"572.73", "Volume"=>"2352400", "Adj Close"=>"572.73"}, content_type="application/json", vtag="3pbhcnmUtPZvXBSCmo5ESs", links=[], last_mod=1276388043, last_mod_usecs=65345, usermeta={}>
+  >> rcon.save
+  => true
+  >> key = bucket["2010-04-12"]
+  => #<Riak::Key name="2010-04-12", vclock="k\xCEa```\xCA`\xCA\x05R,\xCC\xF3{*2\x98\x12\x19\xF3X\x19N\xCF\xEB8\xCA\a\x13\xFE\x9A\xF3\x05*|x)P8\v\x00", contents=[#<#Riak::RiakContent value={"Date"=>Tue, 13 Apr 2010, "Open"=>"567.35", "High"=>"574.00", "Low"=>"566.22", "Close"=>"572.73", "Volume"=>"2352400", "Adj Close"=>"572.73"}, content_type="application/json", vtag="2wCEI09OVZEUcHozcm9XCX", links=[], last_mod=1276389827, last_mod_usecs=762316, usermeta={}>]>
+  >> rcon = key.content
+  => #<#Riak::RiakContent value={"Date"=>Tue, 13 Apr 2010, "Open"=>"567.35", "High"=>"574.00", "Low"=>"566.22", "Close"=>"572.73", "Volume"=>"2352400", "Adj Close"=>"572.73"}, content_type="application/json", vtag="2wCEI09OVZEUcHozcm9XCX", links=[], last_mod=1276389827, last_mod_usecs=762316, usermeta={}>
+  >> rcon.value["Date"] -= 1.day
+  => Mon, 12 Apr 2010
+  >> rcon.save
+  => true
+  >> key = bucket["2010-04-12"]
+  => #<Riak::Key name="2010-04-12", vclock="k\xCEa```\xCA`\xCA\x05R,\xCC\xF3{*2\x98\x12\x19\xF3X\x19N\xCF\xEB8\xCA\a\x13\xFE\x9A\xF3\x05(\xCC\x04\x14~\xBC\x14(\x9C\x05\x00", contents=[#<#Riak::RiakContent value={"Date"=>Mon, 12 Apr 2010, "Open"=>"567.35", "High"=>"574.00", "Low"=>"566.22", "Close"=>"572.73", "Volume"=>"2352400", "Adj Close"=>"572.73"}, content_type="application/json", vtag="264RmLHrCK89zvhtq4n6Fj", links=[], last_mod=1276389859, last_mod_usecs=810556, usermeta={}>]>
+  >> rcon = key.content
+  => #<#Riak::RiakContent value={"Date"=>Mon, 12 Apr 2010, "Open"=>"567.35", "High"=>"574.00", "Low"=>"566.22", "Close"=>"572.73", "Volume"=>"2352400", "Adj Close"=>"572.73"}, content_type="application/json", vtag="264RmLHrCK89zvhtq4n6Fj", links=[], last_mod=1276389859, last_mod_usecs=810556, usermeta={}>
+  >> 
+
+=== Load the GOOG stocks from the riak Fast Track:
 
   require 'riak'
   require 'csv'
@@ -64,6 +98,15 @@ Load the GOOG stocks from the riak Fast Track:
 == INSTALL:
 
 * Right now, clone this project.  Will have it gem-able in the not too distant future.
+
+== LINKS:
+
+* Riak Fast Track: https://wiki.basho.com/display/RIAK/Loading+Data+and+Running+MapReduce+Queries
+* Riak Ruby Client, for REST: http://github.com/seancribbs/ripple
+
+== THANKS:
+
+This is my first public open source whatever, and I appreciate the people in #riak who tolerated me.
 
 == LICENSE:
 
