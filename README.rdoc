@@ -40,7 +40,8 @@ Fetch a Key:
   >> bucket["2010-04-12"]
   => #<Riak::Key name="2010-04-12", vclock="k\xCEa```\xCC`\xCA\x05R,\fG\x8D|3\x98\x12\x19\xF3X\x19\xCA\xFC\xEB\x8F\xF2e\x01\x00", contents=[#<#Riak::RiakContent value={"Open"=>"567.35", "High"=>"574.00", "Low"=>"566.22", "Close"=>"572.73", "Volume"=>"2352400", "Adj Close"=>"572.73"}, content_type="application/json", vtag="47MILXxnsXofyBsZjcC52h", links=[], last_mod=1275777910, last_mod_usecs=971172, usermeta={}>]>
 
-Load the GOOG stocks from the riak <a href="https://wiki.basho.com/display/RIAK/Loading+Data+and+Running+MapReduce+Queries">Fast Track</a>:
+Load the GOOG stocks from the riak Fast Track:
+(https://wiki.basho.com/display/RIAK/Loading+Data+and+Running+MapReduce+Queries)
 
   require 'riak'
   require 'csv'
