@@ -213,9 +213,9 @@ module Riak
     end
 
     # @return [String] A representation suitable for IRB and debugging output.
-      def inspect
-        "#<Client >"
-      end
+#      def inspect
+#        "#<Client >"
+#      end
 
     private
     def b64encode(n)

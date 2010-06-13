@@ -72,7 +72,6 @@ describe Riak::Client do
     end # describe "setting the port"
 
     describe "setting the client id" do
-=begin
       it "should accept a string unmodified" do
         @client.client_id = "foo"
         @client.client_id.should == "foo"
@@ -90,7 +89,6 @@ describe Riak::Client do
       it "should reject an integer larger than the maximum client id" do
         lambda { @client.client_id = Riak::Client::MAX_CLIENT_ID + 1 }.should raise_error(ArgumentError)
       end
-=end
     end # describe "setting the client id"
   end # describe "reconfiguring"
 

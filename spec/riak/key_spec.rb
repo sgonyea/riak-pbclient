@@ -32,7 +32,7 @@ describe Riak::Key do
           Riak::RpbGetReq.new(:bucket => "goog", :key => "2010-04-12", :r => nil)
         ).and_return(
           Riak::RpbGetResp.new(
-            {   :content  =>  [Riak::RpbContent.new],
+            {   :content  =>  [Riak::RpbContent.new(:value => "Test")],
                 :vclock   =>  "k\xCEa```\xCC`\xCA\x05R,\xACL\xF7^e0%2\xE6\xB12\xC4s\xE6\x1D\xE5\xCB\x02\x00"
             }
         ))

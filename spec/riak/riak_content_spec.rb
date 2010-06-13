@@ -58,7 +58,7 @@ describe Riak::RiakContent do
     end
 
     it "should serialize into a corresponding Protocol Buffer (RpbContent)" do
-      rcontent                          =   Riak::RiakContent.new
+      rcontent                          =   Riak::RiakContent.new(@key, :value => "Test")
       rcontent.to_pb.should             be_kind_of(Riak::RpbContent)
     end
     

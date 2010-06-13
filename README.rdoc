@@ -4,73 +4,56 @@
 
 == DESCRIPTION:
 
-This is a Riak client, using protocol buffers, in Ruby
+This is a Ruby client for Riak, using protocol buffers instead of REST.  It offers some benefit in terms of speed and it abstracts Buckets/Keys differently than does the REST client.  Different != Better.
 
 == FEATURES/PROBLEMS:
 
-* Map/Reduce now works!
-* Links basically work, too!
+* It works, which surely counts for something.
+* It's still rough around the edges, but certainly usable.  I'm attempting to polish it, though <b>suggestions welcome</b>.
+* It can list buckets!  Huzzah!
 
 == SYNOPSIS:
 
-This is a work in progress and I am current improving the rspec and the documentation, so-as to minimize the number of rage strokes that I cause.  I wasn't sure how to approach some of my tests, so I plugged in some assumptions about data.  This was to let me continue playing around / figuring out stuff, without creating some kind of a "no pants dance" (pants=tests) zone.
+This is a work in progress and I am current improving the rspec and the documentation, but please have fun and give me some feedback.  The below examples 
 
-I will now rejigger my efforts and unfubar some of the tests+documentation.  Sorry for the terminology.
+Connect to riak and ping it:
 
-Inject the 'goog.csv' on the Fast Track into riak:
+  >> client = Riak::Client.new # Riak::Client.new({:host => "ubuntu01", :port => 1234})
+  => #<Riak::Client:0x0000010328a040 @host="127.0.0.1", @port=8087, @w=nil, @dw=nil, @buckets=[], @bucket_cache={}>
+  >> client.ping?
+  => true
 
-  rc = Riak::Client.new
+List buckets (probably shouldn't in production):
 
-  rc.ping?
+  >> client = Riak::Client.new
+  => #<Riak::Client:0x00000101439a78 @host="127.0.0.1", @port=8087, @w=nil, @dw=nil, @buckets=[], @bucket_cache={}>
+  >> client.buckets
+  => ["hb", "goog"]
 
+Fetch a Bucket:
+
+  >> bucket = client["goog"]
+  => #<Riak::Bucket name=goog, props={n_val=>3, allow_mult=false}>
+
+Fetch a Key:
+
+  >> bucket["2010-04-12"]
+  => #<Riak::Key name="2010-04-12", vclock="k\xCEa```\xCC`\xCA\x05R,\fG\x8D|3\x98\x12\x19\xF3X\x19\xCA\xFC\xEB\x8F\xF2e\x01\x00", contents=[#<#Riak::RiakContent value={"Open"=>"567.35", "High"=>"574.00", "Low"=>"566.22", "Close"=>"572.73", "Volume"=>"2352400", "Adj Close"=>"572.73"}, content_type="application/json", vtag="47MILXxnsXofyBsZjcC52h", links=[], last_mod=1275777910, last_mod_usecs=971172, usermeta={}>]>
+
+Load the GOOG stocks from the riak <a href="https://wiki.basho.com/display/RIAK/Loading+Data+and+Running+MapReduce+Queries">Fast Track</a>:
+
+  require 'riak'
   require 'csv'
 
   client = Riak::Client.new
-  bucket = rc['goog']
+  bucket = client["goog"]
 
   CSV.foreach('goog.csv', :headers => true) do |row|
-    puts row[0].to_s
-    key = bucket[row[0].to_s]
-    key.content.content_type = "application/json"
-    key.content.value = {"Open" => row[1], "High" => row[2], "Low" => row[3], "Close" => row[4], "Volume" => row[5], "Adj Close" => row[6]}
-    key.content.save
+    puts row.first[1].to_s
+    key = bucket[row.first[1].to_s]
+    key.content.value = Hash[row.to_a]
+    key.save
   end
-
-------
-
-  irb(main):001:0> require 'lib/riak'
-   => true
-  irb(main):002:0> rc = Riak::Client.new
-   => #<Riak::Client:0x00000100932f90 @host="127.0.0.1", @port=8087, @bucket_list=[], @buckets=[]>
-  irb(main):003:0> rc.ping?
-   => true
-  irb(main):004:0> rc
-   => #<Riak::Client:0x00000100932f90 @host="127.0.0.1", @port=8087, @bucket_list=[], @buckets=[], @rpc=#<Riak::Client::Rpc:0x00000101075988 @client=#<Riak::Client:0x00000100932f90 ...>, @req_message="\x00\x00\x00\x01\x01", @resp_message="\x00\x00\x00\x01\x02", @resp_message_code=2, @response="">>
-  irb(main):005:0> rc.rpc
-   => #<Riak::Client::Rpc:0x00000101075988 @client=#<Riak::Client:0x00000100932f90 @host="127.0.0.1", @port=8087, @bucket_list=[], @buckets=[], @rpc=#<Riak::Client::Rpc:0x00000101075988 ...>>, @req_message="\x00\x00\x00\x01\x01", @resp_message="\x00\x00\x00\x01\x02", @resp_message_code=2, @response="">
-  irb(main):006:0> 
-
------
-
-  >> getreq = Riak::RpbGetReq.new
-   => bucket: nil
-  key: nil
-
-  >> getreq.bucket = "goog"
-   => "goog"
-  >> getreq.key = "2005-02-11"
-   => "2005-02-11"
-  >> resp = rc.rpc.request Riak::Util::MessageCode::GET_REQUEST, getreq, Riak::RpbGetResp
-   => content {
-    value: "{\"Date\":\"2005-02-11\",\"Open\":186.66,\"High\":192.32,\"Low\":186.07,\"Close\":187.40,\"Volume\":13116000,\"Adj. Close\":187.40}"
-    content_type: "application/json"
-    vtag: "MI6XwqUBWuyakx2K2MQjQ"
-    last_mod: 1274645879
-    last_mod_usecs: 33954
-  }
-  vclock: "k\xCEa```\xCC`\xCA\x05R,\xCC\x8Fw\x84d0%2\xE6\xB12\x94s\xE6\x1D\xE5\xCB\x02\x00"
-
-  >> 
 
 == REQUIREMENTS:
 
@@ -79,13 +62,15 @@ Inject the 'goog.csv' on the Fast Track into riak:
 
 == INSTALL:
 
-* Don't do it.  Not yet.
+* Right now, clone this project.  Will have it gem-able in the not too distant future.
 
 == LICENSE:
 
 (The MIT License)
 
 Copyright (c) 2010 Scott Gonyea
+Copyright (c) 2010 Sean Cribbs (I ganked a bunch of his code)
+Copyright (c) 2010 Basho Inc., because they paid Sean to create the code that I ganked (and probably have lawyers)
 
 Permission is hereby granted, free of charge, to any person obtaining
 a copy of this software and associated documentation files (the

@@ -63,16 +63,16 @@ module Riak
     # @return [RiakContent] self
     def load(contents)
       if contents.is_a?(Riak::RpbContent) or contents.is_a?(Hash)
-        @content_type     = contents[:content_type]     unless contents[:content_type].empty?
-        @charset          = contents[:charset]          unless contents[:charset].empty?
-        @content_encoding = contents[:content_encoding] unless contents[:content_encoding].empty?
-        @vtag             = contents[:vtag]             unless contents[:vtag].empty?
-        self.links        = contents[:links]            unless contents[:links].empty?
+        @content_type     = contents[:content_type]     unless contents[:content_type].blank?
+        @charset          = contents[:charset]          unless contents[:charset].blank?
+        @content_encoding = contents[:content_encoding] unless contents[:content_encoding].blank?
+        @vtag             = contents[:vtag]             unless contents[:vtag].blank?
+        self.links        = contents[:links]            unless contents[:links].blank?
         @last_mod         = contents[:last_mod]
         @last_mod_usecs   = contents[:last_mod_usecs]
-        self.usermeta     = contents[:usermeta]         unless contents[:usermeta].empty?
+        self.usermeta     = contents[:usermeta]         unless contents[:usermeta].blank?
 
-        if not contents[:value].nil?
+        unless contents[:value].blank?
           case @content_type
           when /json/
             @value = ActiveSupport::JSON.decode(contents[:value]) 
@@ -146,7 +146,7 @@ module Riak
 
     # @return [Riak::RpbContent] An instance of a RpbContent, suitable for protobuf exchange
     def to_pb
-      raise RuntimeError t('value_empty') if @value.nil?
+      raise TypeError.new t('value_empty') if @value.nil? # Should be RuntimeError.  Will change later.
 
       rpb_content                   = Riak::RpbContent.new
 
