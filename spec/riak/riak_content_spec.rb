@@ -33,21 +33,21 @@ describe Riak::RiakContent do
     end
 
     it "should default with nil attributes and links/usermeta as instances of Set/Hash" do
-      rcontent                          =   Riak::RiakContent.new
-      rcontent.key.should               ==  nil
+      rcontent                          =   Riak::RiakContent.new(@key)
+      rcontent.key.should               ==  @key
       rcontent.value.should             ==  nil
       rcontent.content_type.should      ==  nil
       rcontent.charset.should           ==  nil
       rcontent.content_encoding.should  ==  nil
       rcontent.vtag.should              ==  nil
-      rcontent.links.should             be_kind_of(Set)
+      rcontent.links.should             be_kind_of(Hash)
       rcontent.last_mod.should          ==  nil
       rcontent.last_mod_usecs.should    ==  nil
       rcontent.usermeta.should          be_kind_of(Hash)
     end
 
     it "should allow you to set the Key, after initialization" do
-      rcontent                          =   Riak::RiakContent.new
+      rcontent                          =   Riak::RiakContent.new(@key)
       rcontent.key                      =   @key
       rcontent.key.should               ==  @key
     end
@@ -78,7 +78,7 @@ describe Riak::RiakContent do
       rcontent.charset.should           ==  nil
       rcontent.content_encoding.should  ==  nil
       rcontent.vtag.should              ==  "4DNB6Vt0zLl5VJ6P2xx9dc"
-      rcontent.links.should             be_kind_of(Set)
+      rcontent.links.should             be_kind_of(Hash)
       rcontent.last_mod.should          ==  1274645855
       rcontent.last_mod_usecs.should    ==  968694
       rcontent.usermeta.should          be_kind_of(Hash)

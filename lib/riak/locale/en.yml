@@ -4,6 +4,7 @@ en:
     string_type: "invalid_argument {{string}} is not a String"
     loading_bucket: "while loading bucket '{{name}}'"
     invalid_bucket: "the specified bucket is invalid"
+    invalid_key: "the specified key does not exist"
     value_empty: "a value must be set in order to serialize into a protocol buffer"
     failed_request: "Expected message code {{expected}} from Riak but received {{actual}}. {{output}}"
     decode_error: "Riak reported a message length of {{expected}} but length was {{actual}}. {{output}}"

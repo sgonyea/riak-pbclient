@@ -43,12 +43,13 @@ module Riak
     alias_attribute :meta, :usermeta
 
     # Create a new riak_content object manually
+    # @param [Riak::Key] key Key instance that owns this RiakContent (really, you should use the Key to get this)
+    # @param [Hash] contents Any contents to initialize this instance with
     # @see Key#content
-    def initialize(key=nil, contents={})
-#      options.assert_valid_keys(:value, :data, :content_type, :charset, :content_encoding)
-
+    # @see RiakContent#load
+    def initialize(key, contents={})
       @key              = key unless key.nil?
-      @links            = Set.new
+      @links            = Hash.new{|k,v| k[v] = []}
       @_links           = []
       @usermeta         = {}
 
@@ -112,14 +113,30 @@ module Riak
       return(false) # Create and raise Error message for this?  Extend "Failed Request"?
     end
 
-    # Internalizes a link to a Key, which will be saved on next call to save
-    # @param [String] bucket name of the bucket, in which the key is stored
-    # @param [String] key name of the key, in the given bucket, to be linked to
-    # @param [String] tag how to name the link, to the bucket/key in riak
-    # @return [Set] links that this RiakContent points to
-    def link_key(bucket, key, tag)
-      link  = [pb_link.tag, @key.get_linked(pb_link.bucket, pb_link.key, {:safely => true})]
-      @links.add(link)
+    # Internalizes a link to a Key, which will be saved on next call to... uh, save
+    # @param [Hash] tags name of the tag, pointing to a Key instance, or an array ["bucket", "key"]
+    # @return [Hash] links that this RiakContent points to
+    def link_key(tags)
+      raise TypeError.new t('invalid_tag') unless tag.is_a?(Hash)
+      tags.each do |tag, link|
+        case link
+        when Array
+          bucket            ||= link[0]
+          key               ||= link[1]
+          raise TypeError.new t('invalid_tag') if bucket.nil? or key.nil?
+
+          get_link          ||= @key.get_linked(bucket, key, {:safely => true})
+          raise RuntimeError.new t('invalid_key') if get_link.nil?
+
+          @links[tag.to_s]  <<  get_link
+
+        when Riak::Key
+          @links[tag.to_s] << link
+
+        else
+          raise TypeError.new t('invalid_tag')
+        end
+      end # tags.each do |tag, link|
     end
 
     # Set the links to other Key in riak.
@@ -127,18 +144,9 @@ module Riak
     # @return [Set] links that this RiakContent points to
     def links=(pb_links)
       @links.clear
-      @_links.clear
 
       pb_links.each do |pb_link|
-        if @key.nil?
-          link = _link = [pb_link.tag, pb_link.bucket, pb_link.key]
-        else
-          link  = [pb_link.tag, @key.get_linked(pb_link.bucket, pb_link.key, {:safely => true})]
-          _link = [pb_link.tag, pb_link.bucket, pb_link.key]
-        end
-
-        @links.add(link)
-        @_links << _link
+        @links[pb_link.tag] << @key.get_linked(pb_link.bucket, pb_link.key, {:safely => true})
       end
 
       return(@links)

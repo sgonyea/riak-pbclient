@@ -116,10 +116,14 @@ I'm working on ways to simplify M/R requests.  It works the same as in ripple.  
 
 == INSTALL:
 
+Rubygems:
+  gem install riakpb
+
+From Github:
   git clone git://github.com/aitrus/riak-pbclient.git
   cd riak-pbclient
   rake gem
-  [sudo] gem install -l riak-X.Y.Z.gem
+  gem install -l riakpb-X.Y.Z.gem
 
 == LINKS:
 
