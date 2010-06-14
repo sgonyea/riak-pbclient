@@ -8,9 +8,10 @@ This is a Ruby client for Riak, using protocol buffers instead of REST.  It offe
 
 == FEATURES/PROBLEMS:
 
+* It can list buckets!  Huzzah!
+* You can destroy a bucket, which basically lists its keys and iterates over them--deleting each.
 * It works, which surely counts for something.
 * It's still rough around the edges, but certainly usable.  I'm attempting to polish it, though <b>suggestions welcome</b>.
-* It can list buckets!  Huzzah!
 
 == SYNOPSIS:
 
@@ -35,6 +36,11 @@ This is a work in progress and I am current improving the rspec and the document
 
   >> bucket = client["goog"]
   => #<Riak::Bucket name=goog, props={n_val=>3, allow_mult=false}>
+
+=== Destroy a Bucket:
+
+  >> bucket.destroy!
+  => true
 
 === List Keys within the Bucket:
 
