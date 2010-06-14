@@ -47,7 +47,7 @@ This is a work in progress and I am current improving the rspec and the document
   >> bucket = client["goog"]
   => #<Riak::Bucket name=goog, props={n_val=>3, allow_mult=false}>
   >> bucket.keys
-  => ["2010-05-03", "2010-03-24", "2010-03-05", "2010-02-25", <b>SNIP 80~ Lines</b>, "2005-02-10", "2005-01-04"]
+  => ["2010-05-03", "2010-03-24", "2010-03-05", "2010-02-25", <<SNIP>>, "2005-02-10", "2005-01-04"]
 
 === Fetch a Key:
 

@@ -157,12 +157,14 @@ module Riak
       raise TypeError.new t('value_empty') if @value.nil?
 
       rpb_content                   = Riak::RpbContent.new
+      rpb_links                     = []
 
-      links                         = []
-      @links.each do |link|
-        pb_link       = link[1].to_pb_link
-        pb_link[:tag] = link[0]
-        links << pb_link
+      @links.each do |tag, links|
+        links.each do |link|
+          pb_link     =   link.to_pb_link
+          pb_link.tag =   tag
+          rpb_links   <<  pb_link
+        end
       end
 
       usermeta                      = []
@@ -191,7 +193,7 @@ module Riak
       rpb_content.charset           = @charset          unless @charset.nil? # || @charset.empty?
       rpb_content.content_encoding  = @content_encoding unless @content_encoding.nil? # || @content_encoding.empty?
       rpb_content.vtag              = @vtag             unless @vtag.nil?
-      rpb_content.links             = links             unless links.empty?
+      rpb_content.links             = rpb_links         unless rpb_links.empty?
       rpb_content.usermeta          = usermeta          unless usermeta.empty?
 
       return(rpb_content)
