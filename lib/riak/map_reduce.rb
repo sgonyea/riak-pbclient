@@ -92,22 +92,20 @@ module Riak
     # Add a link phase to the job. Link phases follow links attached to objects automatically (a special case of map).
     # @param [Hash] params represents the types of links to follow
     # @return [MapReduce] self
-    def walk(params={})
-      bucket  ||= params[:bucket]
-      tag     ||= params[:tag]
-      keep      = params[:keep] || false
+    def link(params={})
+      bucket          ||= params[:bucket]
+      tag             ||= params[:tag]
+      keep              = params[:keep] || false
+      function          = {}
 
-      function  = {
-        "link"    => {}
-      }
-      function["link"]["bucket"]  = bucket  unless bucket.nil?
-      function["link"]["tag"]     = tag     unless tag.nil?
+      function[:bucket] = bucket  unless bucket.nil?
+      function[:tag]    = tag     unless tag.nil?
 
       @query << Phase.new({:type => :link, :function => function, :keep => keep})
 
       return(self)
     end
-    alias :link :walk
+    alias :walk :link
 
     # Sets the timeout for the map-reduce job.
     # @param [Fixnum] value the job timeout, in milliseconds
@@ -196,7 +194,7 @@ module Riak
       def as_json(options=nil)
         obj = case type
               when :map, :reduce
-                defaults = {"language" => language, "keep" => keep}
+                defaults = {:language => language, :keep => keep}
                 case function
                 when Hash
                   defaults.merge(function)
@@ -210,7 +208,7 @@ module Riak
                   defaults.merge("module" => function[0], "function" => function[1])
                 end
               when :link
-                function
+                function.merge({:keep => keep})
               end
         obj["arg"] = arg if arg
         { type => obj }
