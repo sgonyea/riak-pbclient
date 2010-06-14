@@ -146,7 +146,7 @@ module Riak
 
     # @return [Riak::RpbContent] An instance of a RpbContent, suitable for protobuf exchange
     def to_pb
-      raise TypeError.new t('value_empty') if @value.nil? # Should be RuntimeError.  Will change later.
+      raise TypeError.new t('value_empty') if @value.nil?
 
       rpb_content                   = Riak::RpbContent.new
 

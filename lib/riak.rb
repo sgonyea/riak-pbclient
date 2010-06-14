@@ -9,7 +9,7 @@ require 'base64'
 require 'riak/client_pb'
 
 module Riak
-  VERSION = '0.0.1'
+  VERSION = '0.1.0'
 
   # Domain objects
   autoload :I18n,             'riak/i18n'

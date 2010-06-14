@@ -3,7 +3,6 @@ gem 'hoe', '>= 2.1.0'
 require 'hoe'
 require 'fileutils'
 require './lib/riak'
-require 'metric_fu'
 
 Hoe.plugin :newgem
 # Hoe.plugin :website
@@ -14,7 +13,7 @@ Hoe.plugin :newgem
 $hoe = Hoe.spec 'riak' do
   self.developer              'Scott Gonyea', 'me@sgonyea.com'
   self.rubyforge_name       = self.name
-  self.summary              = 'riak-pcclient is a protocol buffer client for Riak--the distributed database by Basho.'
+  self.summary              = 'riak-pbclient is a protocol buffer client for Riak--the distributed database by Basho.'
   self.url                  = 'http://github.com/aitrus/riak-pbclient'
 end
 
@@ -34,7 +33,7 @@ namespace :spec do
 
   desc "Run All Specs"
   Rspec::Core::RakeTask.new(:all) do |spec|
-    spec.pattern = Rake::FileList["spec/**/*_spec.rb"] #"spec/**/*_spec.rb"
+    spec.pattern = Rake::FileList["spec/**/*_spec.rb"]
   end
 end
 
