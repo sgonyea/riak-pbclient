@@ -111,6 +111,7 @@ I'm working on ways to simplify M/R requests.  It works the same as in ripple.  
 
 * Rspec >= 2.0.0.beta.9
 * ActiveSupport >= 3.0.0.beta3
+* Protobuf >= 0.4.4
 * [Rakefile] hoe >= 2.1.0
 * [Rakefile] newgem
 

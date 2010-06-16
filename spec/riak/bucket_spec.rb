@@ -4,6 +4,7 @@ describe Riak::Bucket do
   describe "when directly initializing" do
     before :each do
       @client = Riak::Client.new
+      @client.stub!(:set_bucket).and_return(true)
     end
 
     it "should default with the client and name, and empty n_val or allow_mult" do

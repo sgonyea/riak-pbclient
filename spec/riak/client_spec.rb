@@ -140,6 +140,83 @@ describe Riak::Client do
           @client.bucket("goog").should be_kind_of(Riak::Bucket)
         end
 
+        it "should send a request to set the bucket's allow_mult property and return true" do
+          @client.rpc.stub!(:request).with(
+              Riak::Util::MessageCode::SET_BUCKET_REQUEST,
+              Riak::RpbSetBucketReq.new(
+                :bucket => "goog",
+                :props  => Riak::RpbBucketProps.new({
+                  :allow_mult => true
+                }))
+            ).and_return('')
+
+          @client.rpc.stub!(:request).with(
+              Riak::Util::MessageCode::GET_BUCKET_REQUEST,
+              Riak::RpbGetBucketReq.new(:bucket => "goog")
+            ).and_return(
+              Riak::RpbGetBucketResp.new(
+                {   :props  => {
+                    :allow_mult => true,
+                    :n_val      => 3
+                    }
+                }
+            ))
+          @client.set_bucket("goog", :allow_mult => true).should  == true
+          @client["goog"].allow_mult.should                       == true
+        end
+
+        it "should send a request to set the bucket's n_val property and return true" do
+          @client.rpc.stub!(:request).with(
+              Riak::Util::MessageCode::SET_BUCKET_REQUEST,
+              Riak::RpbSetBucketReq.new(
+                :bucket => "goog",
+                :props  => Riak::RpbBucketProps.new({
+                  :n_val => 5
+                }))
+            ).and_return('')
+
+          @client.rpc.stub!(:request).with(
+              Riak::Util::MessageCode::GET_BUCKET_REQUEST,
+              Riak::RpbGetBucketReq.new(:bucket => "goog")
+            ).and_return(
+              Riak::RpbGetBucketResp.new(
+                {   :props  => {
+                    :allow_mult => false,
+                    :n_val      => 5
+                    }
+                }
+            ))
+          @client.set_bucket("goog", :n_val => 5).should  == true
+          @client["goog"].n_val.should                    == 5
+        end
+
+        it "should send a request to set the bucket's allow_mult and n_val properties and return true" do
+          @client.rpc.stub!(:request).with(
+              Riak::Util::MessageCode::SET_BUCKET_REQUEST,
+              Riak::RpbSetBucketReq.new(
+                :bucket => "goog",
+                :props  => Riak::RpbBucketProps.new({
+                  :allow_mult => true,
+                  :n_val      => 5
+                }))
+            ).and_return('')
+
+          @client.rpc.stub!(:request).with(
+              Riak::Util::MessageCode::GET_BUCKET_REQUEST,
+              Riak::RpbGetBucketReq.new(:bucket => "goog")
+            ).and_return(
+              Riak::RpbGetBucketResp.new(
+                {   :props  => {
+                    :allow_mult => true,
+                    :n_val      => 5
+                    }
+                }
+            ))
+          @client.set_bucket("goog", :n_val => 5).should    == true
+          @client["goog"].n_val.should                      == 5
+          @client["goog"].allow_mult.should                 == true
+        end
+
         it "should send a request to list keys within a bucket and return a Protobuf::Field::FieldArray" do
           @client.rpc.stub!(:request).with(
               Riak::Util::MessageCode::LIST_KEYS_REQUEST,

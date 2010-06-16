@@ -19,10 +19,12 @@ module Riak
       attr_reader :req_message, :response, :resp_message_codes, :resp_message, :status
 
       # Establishes a Client ID with the Riak node, for the life of the RPC connection.
-      # @param [Client] the Riak::Client object in which this Rpc instance lives
-      def initialize(client)
+      # @param [Client] client the Riak::Client object in which this Rpc instance lives
+      # @param [Fixnum] limit the max size of an individual TCPSocket receive call.  Need to fix, later.
+      def initialize(client, limit=RECV_LIMIT)
         @status             = false
         @client             = client
+        @limit              = limit
         @client_id          = request(Util::MessageCode::GET_CLIENT_ID_REQUEST).client_id
         @set_client_id      = Riak::RpbSetClientIdReq.new(:client_id => @client_id)
 
@@ -65,7 +67,7 @@ module Riak
                                                 @set_client_id.serialize_to_string)
 
         socket.send(@set_c_id_req, 0)
-        set_c_id_resp       = socket.recv(RECV_LIMIT)
+        set_c_id_resp       = socket.recv(@limit)
 
         resp_code, resp_msg = decode_message(set_c_id_resp)
 
@@ -84,10 +86,14 @@ module Riak
 
         with_socket do |socket|
           begin
-            @req_message  = assemble_request mc, (pb_msg.serialize_to_string rescue '')
+            begin
+              @req_message  = assemble_request mc, pb_msg.serialize_to_string
+            rescue NoMethodError
+              @req_message  = assemble_request mc
+            end
 
             socket.send(@req_message, 0)
-            self.response = socket.recv(RECV_LIMIT)
+            self.response = socket.recv(@limit)
 
           end while(false == (@response.done rescue true))
         end # with_socket
