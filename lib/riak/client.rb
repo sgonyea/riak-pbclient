@@ -99,17 +99,48 @@ module Riak
     # I need bucket!  Bring me bucket! (Retrieves a bucket from Riak.  Eating disorder not included.)
     # @param [String] bucket the bucket to retrieve
     # @return [Bucket] the requested bucket
-    def bring_me_bucket(bucket)
+    def bucket(bucket)
+      return(@bucket_cache[bucket]) if @bucket_cache.has_key?(bucket)
+      bring_me_bucket!(bucket)
+    end
+    alias :[]               :bucket
+    alias :bring_me_bucket  :bucket
+
+    # I need bucket!  Bring me bucket! (Retrieves a bucket from Riak, even if it's already been retrieved.)
+    # @param [String] bucket the bucket to retrieve
+    # @return [Bucket] the requested bucket
+    def bucket!(bucket)
       request       = Riak::RpbGetBucketReq.new(:bucket => bucket)
       response      = rpc.request(
                         Util::MessageCode::GET_BUCKET_REQUEST,
                         request
                       )
-
       @bucket_cache[bucket].load(response)
     end
-    alias :[]     :bring_me_bucket
-    alias :bucket :bring_me_bucket
+    alias :bring_me_bucket! :bucket!
+
+    # Set the properties for a given bucket, and then reload it.
+    # @param [String] bucket the bucket name in which props will be set
+    # @param [RpbBucketProps, Hash] props the properties to be set within the given bucket
+    # @return [TrueClass, FalseClass] whether or not the operation was successful
+    def set_bucket(bucket, props)
+      props = Riak::RpbBucketProps.new(props) if props.is_a?(Hash)
+
+      raise TypeError.new t('invalid_props') unless props.is_a?(Riak::RpbBucketProps)
+
+      begin
+        request       = Riak::RpbSetBucketReq.new(:bucket => bucket, :props => props)
+        response      = rpc.request(
+                          Util::MessageCode::SET_BUCKET_REQUEST,
+                          request
+                        )
+        self.bucket!(bucket)
+
+        return(true)
+      rescue FailedRequest
+        return(false)
+      end
+    end
 
     # Retrieves a key, using RpbGetReq, from within a given bucket, from Riak.
     # @param [String] bucket the bucket from which to retrieve the key
@@ -144,7 +175,6 @@ module Riak
       options[:return_body] ||= true
 
       request   = Riak::RpbPutReq.new(options)
-
       response  = rpc.request(
                     Util::MessageCode::PUT_REQUEST,
                     request
@@ -204,7 +234,6 @@ module Riak
     # @raise [ReturnRespError] if the message response does not correlate with the message requested
     # @return [Hash] Mapping of the buckets (String) to their keys (Array of Strings)
     def keys_in(bucket)
-
       list_keys_request = RpbListKeysReq.new(:bucket => bucket)
 
       response = rpc.request Util::MessageCode::LIST_KEYS_REQUEST, list_keys_request
@@ -216,6 +245,37 @@ module Riak
 #      def inspect
 #        "#<Client >"
 #      end
+
+    # Junkshot lets you throw a lot of data at riak, which will then need to be reconciled later
+    # @overload junkshot(bucket, key, params)
+    #   @param [String] bucket the name of the bucket
+    #   @param [String] key the name of the key
+    #   @param [Hash] params the parameters that are to be updated (Needs fixin')
+    # @overload junkshot(key, params)
+    #   @param [Key] key the Key instance to be junkshotted
+    #   @param [Hash] params the parameters that are to be updated (Needs fixin')
+    # @return [String, Key] dependent upon whether :return_body is set to true or false
+    def junkshot(*params)
+      params = params.dup.flatten
+      case params.size
+      when 3
+        bucket  = params[0]
+        key     = params[1]
+        params  = params[2]
+      when 2
+        begin
+          key     = params[0]
+          bucket  = key.bucket
+          key     = key.name
+        rescue NoMethodError
+          raise TypeError.new t('invalid_key')
+        end
+        params  = params[1]
+      end
+      self.bucket!(bucket).junkshot(key, params)
+    end
+    alias :stuff  :junkshot
+    alias :jk     :junkshot
 
     private
     def b64encode(n)

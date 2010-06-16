@@ -46,7 +46,7 @@ module Riak
 
       if response.has_field?(:content)
         self.content    = response.content
-      elsif @contents.empty?
+      elsif @contents.blank?
         @contents[:new]
       end
 
@@ -79,7 +79,7 @@ module Riak
     # Indicates whether or not the Key is empty
     # @return [Boolean] true or false, whether or not the vclock/content is empty
     def empty?
-      return(true) if @vclock.empty? && (@contents.nil? || @contents.empty?)
+      return(true) if @vclock.blank? && @contents.nil?
       return(false)
     end
 

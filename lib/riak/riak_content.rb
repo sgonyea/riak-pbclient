@@ -138,6 +138,7 @@ module Riak
         end
       end # tags.each do |tag, link|
     end
+    alias :link :link_key
 
     # Set the links to other Key in riak.
     # @param [RpbGetResp, RpbPutResp] contains the tag/bucket/key of a given link
@@ -193,8 +194,8 @@ module Riak
       rpb_content.charset           = @charset          unless @charset.nil? # || @charset.empty?
       rpb_content.content_encoding  = @content_encoding unless @content_encoding.nil? # || @content_encoding.empty?
       rpb_content.vtag              = @vtag             unless @vtag.nil?
-      rpb_content.links             = rpb_links         unless rpb_links.empty?
-      rpb_content.usermeta          = usermeta          unless usermeta.empty?
+      rpb_content.links             = rpb_links         unless rpb_links.nil?
+      rpb_content.usermeta          = usermeta          unless usermeta.nil?
 
       return(rpb_content)
     end

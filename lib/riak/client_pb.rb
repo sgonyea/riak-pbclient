@@ -343,7 +343,7 @@ module Riak
   end
   class RpbContent < ::Protobuf::Message
     defined_in __FILE__
-    required :bytes, :value, 1
+    optional :bytes, :value, 1
     optional :bytes, :content_type, 2
     optional :bytes, :charset, 3
     optional :bytes, :content_encoding, 4

@@ -29,11 +29,11 @@ module Riak
       raise ArgumentError, t("client_type", :client => client.inspect)  unless client.is_a?(Client)
       raise ArgumentError, t("string_type", :string => name.inspect)    unless name.is_a?(String)
 
-      @client     = client
-      @name       = name
-      @n_val      = options[:n_val]       || nil
-      @allow_mult = options[:allow_mult]  || nil
-      @key_cache  = Hash.new{|k,v| k[v] = Riak::Key.new(self, v)}
+      @client           = client
+      @name             = name
+      self.n_val      ||= options[:n_val]
+      self.allow_mult ||= options[:allow_mult]
+      @key_cache        = Hash.new{|k,v| k[v] = Riak::Key.new(self, v)}
     end
 
     # Load information for the bucket from a response given by the {Riak::Client::HTTPBackend}.
@@ -42,12 +42,13 @@ module Riak
     # @return [Bucket] self
     # @see Client#bucket
     def load(response)
-      raise ArgumentError, t("response_type") unless response.is_a?(Riak::RpbGetBucketResp)
+      if response.is_a?(Riak::RpbGetBucketResp)
+        @n_val      = response.props.n_val
+        @allow_mult = response.props.allow_mult
 
-      self.n_val      = response.props.n_val
-      self.allow_mult = response.props.allow_mult
-
-      return(self)
+        return(self)
+      end
+      raise ArgumentError, t("response_type")
     end
 
     # Accesses or retrieves a list of keys in this bucket.  Needs to have expiration / cacheing, though not now.
@@ -86,7 +87,7 @@ module Riak
     # @return [Riak::Key] the object
     def key!(key, r=nil)
       raise ArgumentError, t("string_invalid", :string  => key) unless key.is_a?(String)
-      raise ArgumentError, t("fixnum_invalid", :num     => r)   unless r.is_a?(Fixnum)
+      raise ArgumentError, t("fixnum_invalid", :num     => r)   unless r.is_a?(Fixnum) or r.nil?
 
       response = @client.get_request @name, key, r
 
@@ -111,6 +112,22 @@ module Riak
     def store(options)
       options[:bucket] = @name
       @client.put_request(options)
+    end
+
+    def junkshot(key, params)
+      raise RuntimeError.new t('siblings_disallowed') unless @allow_mult == true
+
+      params[:links]    = parse_links(params[:links])     if params.has_key?(:links)
+      params[:usermeta] = parse_links(params[:usermeta])  if params.has_key?(:usermeta)
+
+      options           = params.slice :return_body, :w, :dw
+      content           = params.slice :value, :content_type, :charset, :content_encoding, :links, :usermeta
+
+      key               = key.name if key.is_a?(Riak::Key)
+      options[:key]     = key
+      options[:content] = Riak::RpbContent.new(content)
+
+      self.store(options)
     end
 
     # Deletes a key from the bucket
@@ -144,9 +161,15 @@ module Riak
     # Set the allow_mult property.  *NOTE* This will result in a PUT request to Riak.
     # @param [true, false] value whether the bucket should allow siblings
     def allow_mult=(value)
-      return(@allow_mult = value) if value.is_a?(TrueClass) or value.is_a?(FalseClass)
-
-      raise ArgumentError, t("boolean_type")
+      case value
+      when true, false
+        @client.set_bucket(self.name, {:n_val => @n_val, :allow_mult => value})
+        return(@allow_mult = value)
+      when nil, ''
+        return(@allow_mult = nil)
+      else
+        raise ArgumentError, t("boolean_type")
+      end
     end
 
     # @return [Fixnum] the N value, or number of replicas for this bucket
@@ -158,9 +181,15 @@ module Riak
     # Saving this value after the bucket has objects stored in it may have unpredictable results.
     # @param [Fixnum] value the number of replicas the bucket should keep of each object
     def n_val=(value)
-      raise ArgumentError, t("fixnum_type", :value => value) unless value.is_a?(Fixnum)
-
-      @n_val = value
+      case value
+      when Fixnum
+        @client.set_bucket(self.name, {:n_val => value, :allow_mult => @allow_mult})
+        return(@n_val = value)
+      when nil, ''
+        return(@n_val = nil)
+      else
+        raise ArgumentError, t("fixnum_type", :value => value)
+      end
     end
 
     # @return [String] a representation suitable for IRB and debugging output
@@ -173,5 +202,30 @@ module Riak
       "#<Riak::Bucket name=#{@name}, props={n_val=>#{@n_val}, allow_mult=#{@allow_mult}}, keys=#{keys.inspect}>"
     end
 
+    private
+    def parse_links(link_params)
+      rpb_links = []
+
+      link_params.each do |tag, links|
+        pb_link         = Riak::RpbLink.new
+        pb_link.tag     = tag
+        pb_link.bucket  = links[0]
+        pb_link.key     = links[1]
+        rpb_links      << pb_link
+      end
+      return(rpb_links)
+    end # parse_links
+
+    def parse_meta(meta_params)
+      rpb_meta = []
+
+      meta_params.each do |k,v|
+        pb_meta       = Riak::RpbPair.new
+        pb_meta.key   = k
+        pb_meta.value = v
+        rpb_meta     << pb_meta
+      end
+      return(rpb_meta)
+    end
   end
 end
