@@ -138,7 +138,6 @@ module Riak
         end
       end # tags.each do |tag, link|
     end
-    alias :link :link_key
 
     # Set the links to other Key in riak.
     # @param [RpbGetResp, RpbPutResp] contains the tag/bucket/key of a given link
