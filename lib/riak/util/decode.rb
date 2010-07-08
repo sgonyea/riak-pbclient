@@ -5,7 +5,6 @@ module Riak
 
     module Decode
       PLEN  = (0..3)
-      PEND  = 3
       PBMC  = PLEN.count
       POFF  = (PBMC+1)
 
