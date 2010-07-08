@@ -14,7 +14,7 @@ module Riak
       include Riak::Util::Encode
       include Riak::Util::Decode
 
-      RECV_LIMIT=1638400
+      RECV_LIMIT=1073741824
 
       attr_reader :req_message, :response, :resp_message_codes, :resp_message, :status
 
@@ -30,7 +30,7 @@ module Riak
 
         # Request / Response Data
         @resp_message_codes = -1
-        @resp_message       = ''
+        @resp_message       = []
         @req_message_code   = -1
         @req_message        = ''
         @response           = ''
@@ -39,11 +39,12 @@ module Riak
       # Clears the request / response data, in preparation for a new request
       def clear
         @resp_message_codes = -1
-        @resp_message       = ''
+        @resp_message       = []
         @req_message_code   = -1
         @req_message        = ''
         @response           = ''
         @status             = false
+        @buffer             = ''
       end
 
       # Opens a TCPSocket connection with the riak host/node
@@ -93,9 +94,9 @@ module Riak
             end
 
             socket.send(@req_message, 0)
-            self.response = socket.recv(@limit)
+            self.parse_response socket.recv(@limit)
 
-          end while(false == (@response.done rescue true))
+          end while(false == (@response[:done] rescue true))
         end # with_socket
 
         return(@response)
@@ -104,10 +105,14 @@ module Riak
       # Handles the response from the Riak node
       # @param [String] value The message returned from the Riak node over the TCP Socket
       # @return [Protobuf::Message] @response the processed response (if any) from the Riak node
-      def response=(value)
-        @resp_message = value
+      def parse_response(value)
+        @resp_message << value
 
-        response_chunk, @resp_message_codes = decode_message(value)
+        value = @buffer + value
+
+#        return {:done => false} if message_remaining?(@resp_message)
+
+        response_chunk, @resp_message_codes, @buffer = decode_message(value)
 
         @resp_message_codes.each do |resp_mc|
           if resp_mc.equal?(ERROR_RESPONSE)
