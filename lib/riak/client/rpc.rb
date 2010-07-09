@@ -97,6 +97,8 @@ module Riak
             self.parse_response socket.recv(@limit)
 
           end while(false == (@response[:done] rescue true))
+
+          socket.flush
         end # with_socket
 
         return(@response)

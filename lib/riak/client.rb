@@ -22,21 +22,29 @@ module Riak
     attr_reader :node
     attr_reader :server_version
     attr_reader :client_id
-
+    attr_reader :options
+    
     # Creates a client connection to Riak's Protobuf Listener
-    # @param [String] options configuration options for the client
-    # @param [String] host ('127.0.0.1') The host or IP address for the Riak endpoint
-    # @param [Fixnum] port (8087) The port of the Riak protobuf listener endpoint
+    # @options [Hash] options configuration options for the client
     def initialize(options={})
       self.host         = options[:host]      ||      "127.0.0.1"
       self.port         = options[:port]      ||      8087
-      self.client_id    = options[:client_id] unless  options[:client_id].nil?
-      @w                = options[:w]
-      @dw               = options[:dw]
+      self.client_id    = options[:client_id] unless  options[:client_id].blank?
+    
+      read_quorum       = options[:r]         || options[:read_quorum]
+      write_quorum      = options[:w]         || options[:write_quorum]
+      replica_commit    = options[:dw]        || options[:replica_commit]
+      return_body       = options[:rb]        || options[:return_body]    || true
+    
+      @options                = options.slice!(:host, :port, :client_id, :r, :read_quorum, :w, :write_quorum, :dw, :replica_commit, :rb, :return_body)
+      @options[:r]            = read_quorum     unless read_quorum.blank?
+      @options[:w]            = write_quorum    unless write_quorum.blank?
+      @options[:dw]           = replica_commit  unless replica_commit.blank?
+      @options[:return_body]  = return_body     unless return_body.blank?
+    
       @buckets          = []
-      @bucket_cache     = Hash.new{|k,v| k[v] = Riak::Bucket.new(self, v)}
+      @bucket_cache     = Hash.new{|k,v| k[v] = Riak::Bucket.new(self, v, @options)}
     end
-
     # Set the hostname of the Riak endpoint. Must be an IPv4, IPv6, or valid hostname
     # @param [String] value The host or IP address for the Riak endpoint
     # @raise [ArgumentError] if an invalid hostname is given
@@ -101,7 +109,7 @@ module Riak
     # @return [Bucket] the requested bucket
     def bucket(bucket)
       return(@bucket_cache[bucket]) if @bucket_cache.has_key?(bucket)
-      bring_me_bucket!(bucket)
+      self.bucket!(bucket)
     end
     alias :[]               :bucket
     alias :bring_me_bucket  :bucket
@@ -149,7 +157,13 @@ module Riak
     # @return [RpbGetResp] the response in which the given Key is stored
     def get_request(bucket, key, quorum=nil)
       request   = Riak::RpbGetReq.new({:bucket => bucket, :key => key})
-      request.r = quorum if quorum.is_a?(Fixnum)
+
+      quorum  ||= @read_quorum
+      unless quorum.blank?
+        quorum    = quorum.to_i
+        request.r = quorum
+      end
+
 
       response  = rpc.request(
                     Util::MessageCode::GET_REQUEST,
@@ -169,17 +183,17 @@ module Riak
     def put_request(options)
       raise ArgumentError, t('invalid_bucket')  if options[:bucket].empty?
       raise ArgumentError, t('empty_content')   if options[:content].nil?
+      options[:w]           ||= @write_quorum   unless @write_quorum.nil?
+      options[:dw]          ||= @replica_commit unless @replica_commit.nil?
+      options[:return_body]   = @return_body    unless options.has_key?(:return_body)
 
-      options[:w]           ||= @w  unless @w.nil?
-      options[:dw]          ||= @dw unless @dw.nil?
-      options[:return_body] ||= true
-
-      request   = Riak::RpbPutReq.new(options)
+      request   = Riak::RpbPutReq.new(options.slice :bucket, :key, :vclock, :content, :w, :dw, :return_body)
       response  = rpc.request(
                     Util::MessageCode::PUT_REQUEST,
                     request
                   )
 
+      return(true)      if response == ""
       return(response)
     end
 
@@ -198,6 +212,9 @@ module Riak
                           Util::MessageCode::DEL_REQUEST,
                           request
                         )
+
+      return(true)      if response == ""
+      return(response)
     end
 
     # Sends a MapReduce operation to riak, using RpbMapRedReq, and returns the Response/phases.
@@ -214,7 +231,7 @@ module Riak
                                 request
                               )
 
-       return(response)
+      return(response)
     end
     alias :mapred :map_reduce_request
     alias :mr     :map_reduce_request
@@ -245,37 +262,6 @@ module Riak
 #      def inspect
 #        "#<Client >"
 #      end
-
-    # Junkshot lets you throw a lot of data at riak, which will then need to be reconciled later
-    # @overload junkshot(bucket, key, params)
-    #   @param [String] bucket the name of the bucket
-    #   @param [String] key the name of the key
-    #   @param [Hash] params the parameters that are to be updated (Needs fixin')
-    # @overload junkshot(key, params)
-    #   @param [Key] key the Key instance to be junkshotted
-    #   @param [Hash] params the parameters that are to be updated (Needs fixin')
-    # @return [String, Key] dependent upon whether :return_body is set to true or false
-    def junkshot(*params)
-      params = params.dup.flatten
-      case params.size
-      when 3
-        bucket  = params[0]
-        key     = params[1]
-        params  = params[2]
-      when 2
-        begin
-          key     = params[0]
-          bucket  = key.bucket
-          key     = key.name
-        rescue NoMethodError
-          raise TypeError.new t('invalid_key')
-        end
-        params  = params[1]
-      end
-      self.bucket!(bucket).junkshot(key, params)
-    end
-    alias :stuff  :junkshot
-    alias :jk     :junkshot
 
     private
     def b64encode(n)

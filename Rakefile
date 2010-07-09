@@ -13,7 +13,7 @@ gemspec = Gem::Specification.new do |gem|
   gem.authors = ["Scott Gonyea"]
   gem.add_development_dependency "rspec", "~>2.0.0.beta.9"
   gem.add_dependency "activesupport", ">= 2.3.5"
-  gem.add_dependency "protobuf", ">=0.4.4"
+  gem.add_dependency "ruby_protobuf", ">=0.4.4"
 
   files = FileList["**/*"]
   files.exclude /\.DS_Store/
