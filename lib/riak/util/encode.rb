@@ -1,11 +1,11 @@
 require 'riak'
 
-module Riak
+module Riakpb
   module Util
     
     module Encode
       
-      # Construct a Request Message for Riak, which adheres to the following structure:
+      # Construct a Request Message for Riakpb, which adheres to the following structure:
       #
       #   00 00 00 07 09 0A 01 62 12 01 6B
       #   |----Len---|MC|----Message-----|

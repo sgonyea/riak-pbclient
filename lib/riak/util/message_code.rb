@@ -1,4 +1,4 @@
-module Riak
+module Riakpb
   module Util
     module MessageCode
       ERROR_RESPONSE            = 0
@@ -56,17 +56,17 @@ module Riak
       
       RESPONSE_CLASS_FOR        = {
         PING_REQUEST            =>  nil,
-        GET_CLIENT_ID_REQUEST   =>  Riak::RpbGetClientIdResp,
+        GET_CLIENT_ID_REQUEST   =>  Riakpb::RpbGetClientIdResp,
         SET_CLIENT_ID_REQUEST   =>  nil,
-        GET_SERVER_INFO_REQUEST =>  Riak::RpbGetServerInfoResp,
-        GET_REQUEST             =>  Riak::RpbGetResp,
-        PUT_REQUEST             =>  Riak::RpbPutResp,
+        GET_SERVER_INFO_REQUEST =>  Riakpb::RpbGetServerInfoResp,
+        GET_REQUEST             =>  Riakpb::RpbGetResp,
+        PUT_REQUEST             =>  Riakpb::RpbPutResp,
         DEL_REQUEST             =>  nil,
-        LIST_BUCKETS_REQUEST    =>  Riak::RpbListBucketsResp,
-        LIST_KEYS_REQUEST       =>  Riak::RpbListKeysResp,
-        GET_BUCKET_REQUEST      =>  Riak::RpbGetBucketResp,
+        LIST_BUCKETS_REQUEST    =>  Riakpb::RpbListBucketsResp,
+        LIST_KEYS_REQUEST       =>  Riakpb::RpbListKeysResp,
+        GET_BUCKET_REQUEST      =>  Riakpb::RpbGetBucketResp,
         SET_BUCKET_REQUEST      =>  nil,
-        MAP_REDUCE_REQUEST      =>  Riak::RpbMapRedResp
+        MAP_REDUCE_REQUEST      =>  Riakpb::RpbMapRedResp
       }
     end
   end

@@ -1,15 +1,15 @@
 require File.expand_path("../spec_helper", File.dirname(__FILE__))
 
-describe Riak::MapReduce do
+describe Riakpb::MapReduce do
   before :each do
-    @client = Riak::Client.new
+    @client = Riakpb::Client.new
     @client.rpc.stub!(:request).and_return(nil)
-    @mr = Riak::MapReduce.new(@client)
+    @mr = Riakpb::MapReduce.new(@client)
   end
 
   it "should require a client" do
-    lambda { Riak::MapReduce.new }.should raise_error
-    lambda { Riak::MapReduce.new(@client) }.should_not raise_error
+    lambda { Riakpb::MapReduce.new }.should raise_error
+    lambda { Riakpb::MapReduce.new(@client) }.should_not raise_error
   end
 
   it "should initialize the inputs and query to empty arrays" do
@@ -19,7 +19,7 @@ describe Riak::MapReduce do
 
   it "should yield itself when given a block on initializing" do
     @mr2 = nil
-    @mr = Riak::MapReduce.new(@client) do |mr|
+    @mr = Riakpb::MapReduce.new(@client) do |mr|
       @mr2 = mr
     end
     @mr2.should == @mr
@@ -41,8 +41,8 @@ describe Riak::MapReduce do
     end
 
     it "should add an object to the inputs by its bucket and key" do
-      bucket = Riak::Bucket.new(@client, "foo")
-      key = Riak::Key.new(bucket, "bar")
+      bucket = Riakpb::Bucket.new(@client, "foo")
+      key = Riakpb::Key.new(bucket, "bar")
       @mr.add(key)
       @mr.inputs.should == [["foo", "bar"]]
     end
@@ -53,7 +53,7 @@ describe Riak::MapReduce do
     end
 
     it "should use a bucket name as the single input" do
-      @mr.add(Riak::Bucket.new(@client, "foo"))
+      @mr.add(Riakpb::Bucket.new(@client, "foo"))
       @mr.inputs.should == "foo"
       @mr.add("docs")
       @mr.inputs.should == "docs"
@@ -114,7 +114,7 @@ describe Riak::MapReduce do
       @mr.query.should have(1).items
       phase = @mr.query.first
       phase.type.should == :link
-#      phase.function.should be_kind_of(Riak::WalkSpec)
+#      phase.function.should be_kind_of(Riakpb::WalkSpec)
       phase.function[:tag].should == "next"
     end
 
@@ -123,7 +123,7 @@ describe Riak::MapReduce do
       @mr.query.should have(1).items
       phase = @mr.query.first
       phase.type.should == :link
-#      phase.function.should be_kind_of(Riak::WalkSpec)
+#      phase.function.should be_kind_of(Riakpb::WalkSpec)
       phase.function[:bucket].should == "foo"
       phase.keep.should be_true
     end
@@ -135,7 +135,7 @@ describe Riak::MapReduce do
     end
 
     it "should map phases to their JSON equivalents" do
-      phase = Riak::MapReduce::Phase.new(:type => :map, :function => "function(){}")
+      phase = Riakpb::MapReduce::Phase.new(:type => :map, :function => "function(){}")
       @mr.query << phase
       @mr.to_json.should include('"source":"function(){}"')
       @mr.to_json.should include('"query":[{"map":{')
@@ -175,11 +175,11 @@ describe Riak::MapReduce do
     end
 
     it "should interpret failed requests with JSON content-types as map reduce errors" do
-      @http.stub!(:post).and_raise(Riak::FailedRequest.new(:post, 200, 500, {"content-type" => ["application/json"]}, '{"error":"syntax error"}'))
-      lambda { @mr.run }.should raise_error(Riak::MapReduceError)
+      @http.stub!(:post).and_raise(Riakpb::FailedRequest.new(:post, 200, 500, {"content-type" => ["application/json"]}, '{"error":"syntax error"}'))
+      lambda { @mr.run }.should raise_error(Riakpb::MapReduceError)
       begin
         @mr.run
-      rescue Riak::MapReduceError => mre
+      rescue Riakpb::MapReduceError => mre
         mre.message.should == '{"error":"syntax error"}'
       else
         fail "No exception raised!"
@@ -187,66 +187,66 @@ describe Riak::MapReduce do
     end
 
     it "should re-raise non-JSON error responses" do
-      @http.stub!(:post).and_raise(Riak::FailedRequest.new(:post, 200, 500, {"content-type" => ["text/plain"]}, 'Oops, you bwoke it.'))
-      lambda { @mr.run }.should raise_error(Riak::FailedRequest)
+      @http.stub!(:post).and_raise(Riakpb::FailedRequest.new(:post, 200, 500, {"content-type" => ["text/plain"]}, 'Oops, you bwoke it.'))
+      lambda { @mr.run }.should raise_error(Riakpb::FailedRequest)
     end
   end
 =end
 end
 
-describe Riak::MapReduce::Phase do
+describe Riakpb::MapReduce::Phase do
   before :each do
     @fun = "function(v,_,_){ return v['values'][0]['data']; }"
   end
 
   it "should initialize with a type and a function" do
-    phase = Riak::MapReduce::Phase.new(:type => :map, :function => @fun, :language => "javascript")
+    phase = Riakpb::MapReduce::Phase.new(:type => :map, :function => @fun, :language => "javascript")
     phase.type.should == :map
     phase.function.should == @fun
     phase.language.should == "javascript"
   end
 
   it "should initialize with a type and an MF" do
-    phase = Riak::MapReduce::Phase.new(:type => :map, :function => ["module", "function"], :language => "erlang")
+    phase = Riakpb::MapReduce::Phase.new(:type => :map, :function => ["module", "function"], :language => "erlang")
     phase.type.should == :map
     phase.function.should == ["module", "function"]
     phase.language.should == "erlang"
   end
 
   it "should initialize with a type and a bucket/key" do
-    phase = Riak::MapReduce::Phase.new(:type => :map, :function => {:bucket => "funs", :key => "awesome_map"}, :language => "javascript")
+    phase = Riakpb::MapReduce::Phase.new(:type => :map, :function => {:bucket => "funs", :key => "awesome_map"}, :language => "javascript")
     phase.type.should == :map
     phase.function.should == {:bucket => "funs", :key => "awesome_map"}
     phase.language.should == "javascript"
   end
 
   it "should assume the language is erlang when the function is an array" do
-    phase = Riak::MapReduce::Phase.new(:type => :map, :function => ["module", "function"])
+    phase = Riakpb::MapReduce::Phase.new(:type => :map, :function => ["module", "function"])
     phase.language.should == "erlang"
   end
 
   it "should assume the language is javascript when the function is a string" do
-    phase = Riak::MapReduce::Phase.new(:type => :map, :function => @fun)
+    phase = Riakpb::MapReduce::Phase.new(:type => :map, :function => @fun)
     phase.language.should == "javascript"
   end
 
   it "should assume the language is javascript when the function is a hash" do
-    phase = Riak::MapReduce::Phase.new(:type => :map, :function => {:bucket => "jobs", :key => "awesome_map"})
+    phase = Riakpb::MapReduce::Phase.new(:type => :map, :function => {:bucket => "jobs", :key => "awesome_map"})
     phase.language.should == "javascript"
   end
 
   it "should accept a WalkSpec for the function when a link phase" do
-#    phase = Riak::MapReduce::Phase.new(:type => :link, :function => Riak::WalkSpec.new({}))
-#    phase.function.should be_kind_of(Riak::WalkSpec)
+#    phase = Riakpb::MapReduce::Phase.new(:type => :link, :function => Riakpb::WalkSpec.new({}))
+#    phase.function.should be_kind_of(Riakpb::WalkSpec)
   end
 
   it "should raise an error if a WalkSpec is given for a phase type other than :link" do
-#    lambda { Riak::MapReduce::Phase.new(:type => :map, :function => Riak::WalkSpec.new({})) }.should raise_error(ArgumentError)
+#    lambda { Riakpb::MapReduce::Phase.new(:type => :map, :function => Riakpb::WalkSpec.new({})) }.should raise_error(ArgumentError)
   end
 
   describe "converting to JSON for the job" do
     before :each do
-      @phase = Riak::MapReduce::Phase.new(:type => :map, :function => "")
+      @phase = Riakpb::MapReduce::Phase.new(:type => :map, :function => "")
     end
 
     [:map, :reduce].each do |type|
@@ -276,8 +276,8 @@ describe Riak::MapReduce::Phase do
         end
 
         it "should include the function name when the function is not a lambda" do
-          @phase.function = "Riak.mapValues"
-          @phase.to_json.should include('"name":"Riak.mapValues"')
+          @phase.function = "Riakpb.mapValues"
+          @phase.to_json.should include('"name":"Riakpb.mapValues"')
           @phase.to_json.should_not include('"source"')
         end
         

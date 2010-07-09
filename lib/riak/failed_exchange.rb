@@ -1,7 +1,7 @@
 require 'riak'
 
-module Riak
-  # Exception raised when the expected response code from Riak
+module Riakpb
+  # Exception raised when the expected response code from Riakpb
   # fails to match the actual response code.
   class FailedExchange < StandardError
     include Util::Translation

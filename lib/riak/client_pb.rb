@@ -253,7 +253,7 @@ require 'protobuf/message/enum'
 require 'protobuf/message/service'
 require 'protobuf/message/extend'
 
-module Riak
+module Riakpb
   class RpbErrorResp < ::Protobuf::Message
     defined_in __FILE__
     required :bytes, :errmsg, 1

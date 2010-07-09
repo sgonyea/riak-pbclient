@@ -1,7 +1,7 @@
 require 'riak'
 require 'csv'
 
-client = Riak::Client.new
+client = Riakpb::Client.new
 bucket = client["goog"]
 
 CSV.foreach('goog.csv', :headers => true) do |row|

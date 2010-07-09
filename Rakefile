@@ -5,9 +5,9 @@ require './lib/riak'
 
 gemspec = Gem::Specification.new do |gem|
   gem.name = "riakpb"
-  gem.summary = %Q{riakpb is a protocol buffer client for Riak--the distributed database by Basho.}
-  gem.description = %Q{riakpb is a protocol buffer client for Riak--the distributed database by Basho.}
-  gem.version = Riak::VERSION
+  gem.summary = %Q{riakpb is a protocol buffer client for Riakpb--the distributed database by Basho.}
+  gem.description = %Q{riakpb is a protocol buffer client for Riakpb--the distributed database by Basho.}
+  gem.version = Riakpb::VERSION
   gem.email = "me@inherentlylame.com"
   gem.homepage = "http://github.com/aitrus/riak-pbclient"
   gem.authors = ["Scott Gonyea"]

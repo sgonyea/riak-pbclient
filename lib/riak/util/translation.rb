@@ -1,6 +1,6 @@
 require 'riak'
 
-module Riak
+module Riakpb
   module Util
     module Translation
       def i18n_scope

@@ -1,9 +1,9 @@
 require 'riak'
 require 'set'
 
-module Riak
-  # Parent class of all object types supported by ripple. {Riak::RObject} represents
-  # the data and metadata stored in a bucket/key pair in the Riak database.
+module Riakpb
+  # Parent class of all object types supported by ripple. {Riakpb::RObject} represents
+  # the data and metadata stored in a bucket/key pair in the Riakpb database.
   class Content
     include Util::Translation
     include Util::MessageCode
@@ -11,7 +11,7 @@ module Riak
     # @return [Key] the key in which this Content is stored.
     attr_accessor   :key
 
-    # @return [String] the data stored in Riak at this object's key.  Varies in format by content-type.
+    # @return [String] the data stored in Riakpb at this object's key.  Varies in format by content-type.
     attr_accessor   :value
     alias_attribute :data, :value
 
@@ -27,7 +27,7 @@ module Riak
     # @return [String] the vtag of the object
     attr_accessor   :vtag
 
-    # @return [Set<Link>] an Set of {Riak::Link} objects for relationships between this object and other resources
+    # @return [Set<Link>] an Set of {Riakpb::Link} objects for relationships between this object and other resources
     attr_accessor   :links
 
     # @return [Time] the Last-Modified header from the most recent HTTP response, useful for caching and reloading
@@ -45,7 +45,7 @@ module Riak
     attr_accessor   :options
 
    # Create a new riak_content object manually
-    # @param [Riak::Key] key Key instance that owns this Content (really, you should use the Key to get this)
+    # @param [Riakpb::Key] key Key instance that owns this Content (really, you should use the Key to get this)
     # @param [Hash] contents Any contents to initialize this instance with
     # @see Key#content
     # @see Content#load
@@ -64,12 +64,12 @@ module Riak
       instance_variable_get "@#{attribute}"
     end
 
-    # Load information for the content from the response object, Riak::RpbContent.
+    # Load information for the content from the response object, Riakpb::RpbContent.
     # @param [RpbContent/Hash] contents an RpbContent object or a Hash.
     # @return [Content] self
     def load(content)
       case content
-      when Riak::RpbContent, Hash, Riak::Content
+      when Riakpb::RpbContent, Hash, Riakpb::Content
         last_mod          = content[:last_mod]
         last_mod_usecs    = content[:last_mod_usecs]
 
@@ -155,14 +155,14 @@ module Riak
       tags.each do |tag, link|
         case link
         when Array
-          newlink = Riak::RpbLink.new
+          newlink = Riakpb::RpbLink.new
           newlink[:bucket]            = link[0]
           newlink[:key]               = link[1]
           raise ArgumentError.new t('invalid_tag') if link[0].nil? or link[1].nil?
 
           @links[tag.to_s]  <<  newlink
 
-        when Riak::Key
+        when Riakpb::Key
           @links[tag.to_s] << link
 
         else
@@ -206,17 +206,17 @@ module Riak
       @last_mod = Time.at time_mod
     end
 
-    # @return [Riak::RpbContent] An instance of a RpbContent, suitable for protobuf exchange
+    # @return [Riakpb::RpbContent] An instance of a RpbContent, suitable for protobuf exchange
     def to_pb
-      rpb_content                   = Riak::RpbContent.new
+      rpb_content                   = Riakpb::RpbContent.new
       rpb_links                     = []
 
       @links.each do |tag, links|
         links.each do |link|
           case link
-          when Riak::RpbLink
+          when Riakpb::RpbLink
             rpb_links   <<  hlink
-          when Riak::Key
+          when Riakpb::Key
             pb_link     =   link.to_pb_link
             pb_link.tag =   tag
             rpb_links   <<  pb_link
@@ -226,7 +226,7 @@ module Riak
 
       usermeta                      = []
       @usermeta.each do |key,value|
-        pb_pair         =   Riak::RpbPair.new
+        pb_pair         =   Riakpb::RpbPair.new
         pb_pair[:key]   =   key
         pb_pair[:value] =   value
         usermeta        <<  pb_pair
@@ -257,7 +257,7 @@ module Riak
 
     # @return [String] A representation suitable for IRB and debugging output
     def inspect
-      "#<#Riak::Content " + [
+      "#<#Riakpb::Content " + [
           (@value.nil?)             ? nil : "value=#{@value.inspect}",
           (@content_type.nil?)      ? nil : "content_type=#{@content_type.inspect}",
           (@charset.nil?)           ? nil : "charset=#{@charset.inspect}",
@@ -274,4 +274,4 @@ module Riak
     private
 
   end # class Content
-end # module Riak
+end # module Riakpb

@@ -4,7 +4,7 @@
 
 == DESCRIPTION:
 
-This is a Ruby client for Riak, using protocol buffers instead of REST.  It offers some benefit in terms of speed and it abstracts Buckets/Keys differently than does the REST client.  Different != Better.
+This is a Ruby client for Riakpb, using protocol buffers instead of REST.  It offers some benefit in terms of speed and it abstracts Buckets/Keys differently than does the REST client.  Different != Better.
 
 == FEATURES/PROBLEMS:
 
@@ -19,23 +19,23 @@ This is a work in progress and I am current improving the rspec and the document
 
 === Connect to riak and ping it:
 
-  >> client = Riak::Client.new # Riak::Client.new({:host => "ubuntu01", :port => 1234})
-  => #<Riak::Client:0x0000010328a040 @host="127.0.0.1", @port=8087, @w=nil, @dw=nil, @buckets=[], @bucket_cache={}>
+  >> client = Riakpb::Client.new # Riakpb::Client.new({:host => "ubuntu01", :port => 1234})
+  => #<Riakpb::Client:0x0000010328a040 @host="127.0.0.1", @port=8087, @w=nil, @dw=nil, @buckets=[], @bucket_cache={}>
   >> client.ping?
   => true
 
 === List Buckets within riak:
 <i>Not suggested for use in production</i>
 
-  >> client = Riak::Client.new
-  => #<Riak::Client:0x00000101439a78 @host="127.0.0.1", @port=8087, @w=nil, @dw=nil, @buckets=[], @bucket_cache={}>
+  >> client = Riakpb::Client.new
+  => #<Riakpb::Client:0x00000101439a78 @host="127.0.0.1", @port=8087, @w=nil, @dw=nil, @buckets=[], @bucket_cache={}>
   >> client.buckets
   => ["hb", "goog"]
 
 === Fetch a Bucket:
 
   >> bucket = client["goog"]
-  => #<Riak::Bucket name=goog, props={n_val=>3, allow_mult=false}>
+  => #<Riakpb::Bucket name=goog, props={n_val=>3, allow_mult=false}>
 
 === Destroy a Bucket:
 
@@ -45,22 +45,22 @@ This is a work in progress and I am current improving the rspec and the document
 === List Keys within the Bucket:
 
   >> bucket = client["goog"]
-  => #<Riak::Bucket name=goog, props={n_val=>3, allow_mult=false}>
+  => #<Riakpb::Bucket name=goog, props={n_val=>3, allow_mult=false}>
   >> bucket.keys
   => ["2010-05-03", "2010-03-24", "2010-03-05", "2010-02-25", <<SNIP>>, "2005-02-10", "2005-01-04"]
 
 === Fetch a Key:
 
   >> key = bucket["2010-04-12"]
-  => #<Riak::Key name="2010-04-12", vclock="k\xCEa```\xCC`\xCA\x05R,\xCC\xF3{*2\x98\x12\x19\xF3X\x19N\xCF\xEB8\xCA\x97\x05\x00", contents=[#<#Riak::RiakContent value={"Date"=>Mon, 12 Apr 2010, "Open"=>"567.35", "High"=>"574.00", "Low"=>"566.22", "Close"=>"572.73", "Volume"=>"2352400", "Adj Close"=>"572.73"}, content_type="application/json", vtag="3pbhcnmUtPZvXBSCmo5ESs", links=[], last_mod=1276388043, last_mod_usecs=65345, usermeta={}>]>
+  => #<Riakpb::Key name="2010-04-12", vclock="k\xCEa```\xCC`\xCA\x05R,\xCC\xF3{*2\x98\x12\x19\xF3X\x19N\xCF\xEB8\xCA\x97\x05\x00", contents=[#<#Riakpb::Content value={"Date"=>Mon, 12 Apr 2010, "Open"=>"567.35", "High"=>"574.00", "Low"=>"566.22", "Close"=>"572.73", "Volume"=>"2352400", "Adj Close"=>"572.73"}, content_type="application/json", vtag="3pbhcnmUtPZvXBSCmo5ESs", links=[], last_mod=1276388043, last_mod_usecs=65345, usermeta={}>]>
 
 === Fetch a Key's Content:
-<i>Differs from the REST client.  Key+RiakContent = ROjbect</i>
+<i>Differs from the REST client.  Key+Content = ROjbect</i>
 
   >> rcon = key.content
-  => #<#Riak::RiakContent value={"Date"=>Mon, 12 Apr 2010, "Open"=>"567.35", "High"=>"574.00", "Low"=>"566.22", "Close"=>"572.73", "Volume"=>"2352400", "Adj Close"=>"572.73"}, content_type="application/json", vtag="3pbhcnmUtPZvXBSCmo5ESs", links=[], last_mod=1276388043, last_mod_usecs=65345, usermeta={}>
+  => #<#Riakpb::Content value={"Date"=>Mon, 12 Apr 2010, "Open"=>"567.35", "High"=>"574.00", "Low"=>"566.22", "Close"=>"572.73", "Volume"=>"2352400", "Adj Close"=>"572.73"}, content_type="application/json", vtag="3pbhcnmUtPZvXBSCmo5ESs", links=[], last_mod=1276388043, last_mod_usecs=65345, usermeta={}>
 
-=== Play with the RiakContent's data and save it:
+=== Play with the Content's data and save it:
 
   >> rcon.value
   => {"Date"=>Mon, 12 Apr 2010, "Open"=>"567.35", "High"=>"574.00", "Low"=>"566.22", "Close"=>"572.73", "Volume"=>"2352400", "Adj Close"=>"572.73"}
@@ -71,29 +71,29 @@ This is a work in progress and I am current improving the rspec and the document
   >> rcon.value["Date"] += 1.day
   => Tue, 13 Apr 2010
   >> rcon
-  => #<#Riak::RiakContent value={"Date"=>Tue, 13 Apr 2010, "Open"=>"567.35", "High"=>"574.00", "Low"=>"566.22", "Close"=>"572.73", "Volume"=>"2352400", "Adj Close"=>"572.73"}, content_type="application/json", vtag="3pbhcnmUtPZvXBSCmo5ESs", links=[], last_mod=1276388043, last_mod_usecs=65345, usermeta={}>
+  => #<#Riakpb::Content value={"Date"=>Tue, 13 Apr 2010, "Open"=>"567.35", "High"=>"574.00", "Low"=>"566.22", "Close"=>"572.73", "Volume"=>"2352400", "Adj Close"=>"572.73"}, content_type="application/json", vtag="3pbhcnmUtPZvXBSCmo5ESs", links=[], last_mod=1276388043, last_mod_usecs=65345, usermeta={}>
   >> rcon.save
   => true
   >> key = bucket["2010-04-12"]
-  => #<Riak::Key name="2010-04-12", vclock="k\xCEa```\xCA`\xCA\x05R,\xCC\xF3{*2\x98\x12\x19\xF3X\x19N\xCF\xEB8\xCA\a\x13\xFE\x9A\xF3\x05*|x)P8\v\x00", contents=[#<#Riak::RiakContent value={"Date"=>Tue, 13 Apr 2010, "Open"=>"567.35", "High"=>"574.00", "Low"=>"566.22", "Close"=>"572.73", "Volume"=>"2352400", "Adj Close"=>"572.73"}, content_type="application/json", vtag="2wCEI09OVZEUcHozcm9XCX", links=[], last_mod=1276389827, last_mod_usecs=762316, usermeta={}>]>
+  => #<Riakpb::Key name="2010-04-12", vclock="k\xCEa```\xCA`\xCA\x05R,\xCC\xF3{*2\x98\x12\x19\xF3X\x19N\xCF\xEB8\xCA\a\x13\xFE\x9A\xF3\x05*|x)P8\v\x00", contents=[#<#Riakpb::Content value={"Date"=>Tue, 13 Apr 2010, "Open"=>"567.35", "High"=>"574.00", "Low"=>"566.22", "Close"=>"572.73", "Volume"=>"2352400", "Adj Close"=>"572.73"}, content_type="application/json", vtag="2wCEI09OVZEUcHozcm9XCX", links=[], last_mod=1276389827, last_mod_usecs=762316, usermeta={}>]>
   >> rcon = key.content
-  => #<#Riak::RiakContent value={"Date"=>Tue, 13 Apr 2010, "Open"=>"567.35", "High"=>"574.00", "Low"=>"566.22", "Close"=>"572.73", "Volume"=>"2352400", "Adj Close"=>"572.73"}, content_type="application/json", vtag="2wCEI09OVZEUcHozcm9XCX", links=[], last_mod=1276389827, last_mod_usecs=762316, usermeta={}>
+  => #<#Riakpb::Content value={"Date"=>Tue, 13 Apr 2010, "Open"=>"567.35", "High"=>"574.00", "Low"=>"566.22", "Close"=>"572.73", "Volume"=>"2352400", "Adj Close"=>"572.73"}, content_type="application/json", vtag="2wCEI09OVZEUcHozcm9XCX", links=[], last_mod=1276389827, last_mod_usecs=762316, usermeta={}>
   >> rcon.value["Date"] -= 1.day
   => Mon, 12 Apr 2010
   >> rcon.save
   => true
   >> key = bucket["2010-04-12"]
-  => #<Riak::Key name="2010-04-12", vclock="k\xCEa```\xCA`\xCA\x05R,\xCC\xF3{*2\x98\x12\x19\xF3X\x19N\xCF\xEB8\xCA\a\x13\xFE\x9A\xF3\x05(\xCC\x04\x14~\xBC\x14(\x9C\x05\x00", contents=[#<#Riak::RiakContent value={"Date"=>Mon, 12 Apr 2010, "Open"=>"567.35", "High"=>"574.00", "Low"=>"566.22", "Close"=>"572.73", "Volume"=>"2352400", "Adj Close"=>"572.73"}, content_type="application/json", vtag="264RmLHrCK89zvhtq4n6Fj", links=[], last_mod=1276389859, last_mod_usecs=810556, usermeta={}>]>
+  => #<Riakpb::Key name="2010-04-12", vclock="k\xCEa```\xCA`\xCA\x05R,\xCC\xF3{*2\x98\x12\x19\xF3X\x19N\xCF\xEB8\xCA\a\x13\xFE\x9A\xF3\x05(\xCC\x04\x14~\xBC\x14(\x9C\x05\x00", contents=[#<#Riakpb::Content value={"Date"=>Mon, 12 Apr 2010, "Open"=>"567.35", "High"=>"574.00", "Low"=>"566.22", "Close"=>"572.73", "Volume"=>"2352400", "Adj Close"=>"572.73"}, content_type="application/json", vtag="264RmLHrCK89zvhtq4n6Fj", links=[], last_mod=1276389859, last_mod_usecs=810556, usermeta={}>]>
   >> rcon = key.content
-  => #<#Riak::RiakContent value={"Date"=>Mon, 12 Apr 2010, "Open"=>"567.35", "High"=>"574.00", "Low"=>"566.22", "Close"=>"572.73", "Volume"=>"2352400", "Adj Close"=>"572.73"}, content_type="application/json", vtag="264RmLHrCK89zvhtq4n6Fj", links=[], last_mod=1276389859, last_mod_usecs=810556, usermeta={}>
+  => #<#Riakpb::Content value={"Date"=>Mon, 12 Apr 2010, "Open"=>"567.35", "High"=>"574.00", "Low"=>"566.22", "Close"=>"572.73", "Volume"=>"2352400", "Adj Close"=>"572.73"}, content_type="application/json", vtag="264RmLHrCK89zvhtq4n6Fj", links=[], last_mod=1276389859, last_mod_usecs=810556, usermeta={}>
   >> 
 
 === Junkshot: (Siblings)
 
-  >> client = Riak::Client.new
-  => #<Riak::Client:0x00000100d2b998 @host="127.0.0.1", @port=8087, @w=nil, @dw=nil, @buckets=[], @bucket_cache={}>
+  >> client = Riakpb::Client.new
+  => #<Riakpb::Client:0x00000100d2b998 @host="127.0.0.1", @port=8087, @w=nil, @dw=nil, @buckets=[], @bucket_cache={}>
   >> bucket = client["goog2"]
-  => #<Riak::Bucket name=goog2, props={n_val=>3, allow_mult=false}>
+  => #<Riakpb::Bucket name=goog2, props={n_val=>3, allow_mult=false}>
   >> bucket.allow_mult = true
   => true
   >> client.junkshot "goog2", "2010-04-12", {:links => {"tomorrow" => ["goog2", "2010-04-13"]}}
@@ -129,7 +129,7 @@ I'm working on ways to simplify M/R requests.  It works the same as in ripple.  
   require 'riak'
   require 'csv'
 
-  client = Riak::Client.new
+  client = Riakpb::Client.new
   bucket = client["goog"]
 
   CSV.foreach('goog.csv', :headers => true) do |row|
@@ -158,9 +158,9 @@ From Github:
 
 == LINKS:
 
-* Riak Fast Track: https://wiki.basho.com/display/RIAK/The+Riak+Fast+Track
-* Riak Fast Track GOOG data: https://wiki.basho.com/display/RIAK/Loading+Data+and+Running+MapReduce+Queries
-* Ruby Client for Riak's REST Interface: http://github.com/seancribbs/ripple
+* Riakpb Fast Track: https://wiki.basho.com/display/RIAK/The+Riakpb+Fast+Track
+* Riakpb Fast Track GOOG data: https://wiki.basho.com/display/RIAK/Loading+Data+and+Running+MapReduce+Queries
+* Ruby Client for Riakpb's REST Interface: http://github.com/seancribbs/ripple
 
 == THANKS:
 

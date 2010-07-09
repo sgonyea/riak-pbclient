@@ -6,27 +6,27 @@
 #
 require 'socket'
 
-module Riak
+module Riakpb
   class Client
     class Rpc
-      include Riak::Util::MessageCode
-      include Riak::Util::Translation
-      include Riak::Util::Encode
-      include Riak::Util::Decode
+      include Riakpb::Util::MessageCode
+      include Riakpb::Util::Translation
+      include Riakpb::Util::Encode
+      include Riakpb::Util::Decode
 
       RECV_LIMIT=1073741824
 
       attr_reader :req_message, :response, :resp_message_codes, :resp_message, :status
 
-      # Establishes a Client ID with the Riak node, for the life of the RPC connection.
-      # @param [Client] client the Riak::Client object in which this Rpc instance lives
+      # Establishes a Client ID with the Riakpb node, for the life of the RPC connection.
+      # @param [Client] client the Riakpb::Client object in which this Rpc instance lives
       # @param [Fixnum] limit the max size of an individual TCPSocket receive call.  Need to fix, later.
       def initialize(client, limit=RECV_LIMIT)
         @status             = false
         @client             = client
         @limit              = limit
         @client_id          = request(Util::MessageCode::GET_CLIENT_ID_REQUEST).client_id
-        @set_client_id      = Riak::RpbSetClientIdReq.new(:client_id => @client_id)
+        @set_client_id      = Riakpb::RpbSetClientIdReq.new(:client_id => @client_id)
 
         # Request / Response Data
         @resp_message_codes = -1
@@ -104,9 +104,9 @@ module Riak
         return(@response)
       end # stream_request
 
-      # Handles the response from the Riak node
-      # @param [String] value The message returned from the Riak node over the TCP Socket
-      # @return [Protobuf::Message] @response the processed response (if any) from the Riak node
+      # Handles the response from the Riakpb node
+      # @param [String] value The message returned from the Riakpb node over the TCP Socket
+      # @return [Protobuf::Message] @response the processed response (if any) from the Riakpb node
       def parse_response(value)
         @resp_message << value
 
@@ -137,4 +137,4 @@ module Riak
 
     end # class Client
   end # module Rpc
-end # module RiakPbclient
+end # module RiakpbPbclient

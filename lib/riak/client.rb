@@ -1,7 +1,7 @@
 require 'riak'
 
-module Riak
-  # A client connection to Riak.
+module Riakpb
+  # A client connection to Riakpb.
   class Client
     include Util::Translation
     include Util::MessageCode
@@ -24,7 +24,7 @@ module Riak
     attr_reader :client_id
     attr_reader :options
     
-    # Creates a client connection to Riak's Protobuf Listener
+    # Creates a client connection to Riakpb's Protobuf Listener
     # @options [Hash] options configuration options for the client
     def initialize(options={})
       self.host         = options[:host]      ||      "127.0.0.1"
@@ -43,10 +43,10 @@ module Riak
       @options[:return_body]  = return_body     unless return_body.blank?
     
       @buckets          = []
-      @bucket_cache     = Hash.new{|k,v| k[v] = Riak::Bucket.new(self, v, @options)}
+      @bucket_cache     = Hash.new{|k,v| k[v] = Riakpb::Bucket.new(self, v, @options)}
     end
-    # Set the hostname of the Riak endpoint. Must be an IPv4, IPv6, or valid hostname
-    # @param [String] value The host or IP address for the Riak endpoint
+    # Set the hostname of the Riakpb endpoint. Must be an IPv4, IPv6, or valid hostname
+    # @param [String] value The host or IP address for the Riakpb endpoint
     # @raise [ArgumentError] if an invalid hostname is given
     # @return [String] the assigned hostname
     def host=(value)
@@ -54,8 +54,8 @@ module Riak
       @host = value
     end
 
-    # Set the port number of the Riak endpoint. This must be an integer between 0 and 65535.
-    # @param [Fixnum] value The port number of the Riak endpoint
+    # Set the port number of the Riakpb endpoint. This must be an integer between 0 and 65535.
+    # @param [Fixnum] value The port number of the Riakpb endpoint
     # @raise [ArgumentError] if an invalid port number is given
     # @return [Fixnum] the assigned port number
     def port=(value)
@@ -64,7 +64,7 @@ module Riak
     end
 
     # Set the client ID for this client. Must be a string or Fixnum value 0 =< value < MAX_CLIENT_ID.
-    # @param [String, Fixnum] value The internal client ID used by Riak to route responses
+    # @param [String, Fixnum] value The internal client ID used by Riakpb to route responses
     # @raise [ArgumentError] when an invalid client ID is given
     # @return [String] the assigned client ID
     def client_id=(value)
@@ -79,13 +79,13 @@ module Riak
     end
 
     # Establish a connection to the riak node, and store the Rpc instance
-    # @return [Riak::Client::Rpc] the Rpc instance that handles connections to the riak node
+    # @return [Riakpb::Client::Rpc] the Rpc instance that handles connections to the riak node
     def rpc(options={})
       options[:client_id] ||= @client_id if @client_id
       @rpc                ||= Rpc.new(self)
     end
 
-    # Tests connectivity with the Riak host.
+    # Tests connectivity with the Riakpb host.
     # @return [Boolean] Successful returned as 'true', failed connection returned as 'false'
     def ping?
       rpc.request Util::MessageCode::PING_REQUEST
@@ -96,7 +96,7 @@ module Riak
     # Retrieves basic information from the riak node.
     # @return [Hash] Returns the name of the node and its software release number
     def info
-      response        = rpc.request Riak::Util::MessageCode::GET_SERVER_INFO_REQUEST
+      response        = rpc.request Riakpb::Util::MessageCode::GET_SERVER_INFO_REQUEST
 
       @node           = response.node
       @server_version = response.server_version
@@ -104,7 +104,7 @@ module Riak
       {:node => @node, :server_version => @server_version}
     end
 
-    # I need bucket!  Bring me bucket! (Retrieves a bucket from Riak.  Eating disorder not included.)
+    # I need bucket!  Bring me bucket! (Retrieves a bucket from Riakpb.  Eating disorder not included.)
     # @param [String] bucket the bucket to retrieve
     # @return [Bucket] the requested bucket
     def bucket(bucket)
@@ -114,11 +114,11 @@ module Riak
     alias :[]               :bucket
     alias :bring_me_bucket  :bucket
 
-    # I need bucket!  Bring me bucket! (Retrieves a bucket from Riak, even if it's already been retrieved.)
+    # I need bucket!  Bring me bucket! (Retrieves a bucket from Riakpb, even if it's already been retrieved.)
     # @param [String] bucket the bucket to retrieve
     # @return [Bucket] the requested bucket
     def bucket!(bucket)
-      request       = Riak::RpbGetBucketReq.new(:bucket => bucket)
+      request       = Riakpb::RpbGetBucketReq.new(:bucket => bucket)
       response      = rpc.request(
                         Util::MessageCode::GET_BUCKET_REQUEST,
                         request
@@ -132,12 +132,12 @@ module Riak
     # @param [RpbBucketProps, Hash] props the properties to be set within the given bucket
     # @return [TrueClass, FalseClass] whether or not the operation was successful
     def set_bucket(bucket, props)
-      props = Riak::RpbBucketProps.new(props) if props.is_a?(Hash)
+      props = Riakpb::RpbBucketProps.new(props) if props.is_a?(Hash)
 
-      raise TypeError.new t('invalid_props') unless props.is_a?(Riak::RpbBucketProps)
+      raise TypeError.new t('invalid_props') unless props.is_a?(Riakpb::RpbBucketProps)
 
       begin
-        request       = Riak::RpbSetBucketReq.new(:bucket => bucket, :props => props)
+        request       = Riakpb::RpbSetBucketReq.new(:bucket => bucket, :props => props)
         response      = rpc.request(
                           Util::MessageCode::SET_BUCKET_REQUEST,
                           request
@@ -150,13 +150,13 @@ module Riak
       end
     end
 
-    # Retrieves a key, using RpbGetReq, from within a given bucket, from Riak.
+    # Retrieves a key, using RpbGetReq, from within a given bucket, from Riakpb.
     # @param [String] bucket the bucket from which to retrieve the key
     # @param [String] key the name of the key to be received
     # @param [Fixnum] quorum read quorum- num of replicas need to agree when retrieving the object
     # @return [RpbGetResp] the response in which the given Key is stored
     def get_request(bucket, key, quorum=nil)
-      request   = Riak::RpbGetReq.new({:bucket => bucket, :key => key})
+      request   = Riakpb::RpbGetReq.new({:bucket => bucket, :key => key})
 
       quorum  ||= @read_quorum
       unless quorum.blank?
@@ -187,7 +187,7 @@ module Riak
       options[:dw]          ||= @replica_commit unless @replica_commit.nil?
       options[:return_body]   = @return_body    unless options.has_key?(:return_body)
 
-      request   = Riak::RpbPutReq.new(options.slice :bucket, :key, :vclock, :content, :w, :dw, :return_body)
+      request   = Riakpb::RpbPutReq.new(options.slice :bucket, :key, :vclock, :content, :w, :dw, :return_body)
       response  = rpc.request(
                     Util::MessageCode::PUT_REQUEST,
                     request
@@ -197,13 +197,13 @@ module Riak
       return(response)
     end
 
-    # Deletes a key, using RpbDelReq, from within a given bucket, from Riak.
+    # Deletes a key, using RpbDelReq, from within a given bucket, from Riakpb.
     # @param [String] bucket the bucket from which to delete the key
     # @param [String] key the name of the key to be deleted
     # @param [Fixnum] rw how many replicas to delete before returning a successful response
     # @return [RpbGetResp] the response confirming deletion
     def del_request(bucket, key, rw=nil)
-      request         = Riak::RpbDelReq.new
+      request         = Riakpb::RpbDelReq.new
       request.bucket  = bucket
       request.key     = key
       request.rw    ||= rw
@@ -222,7 +222,7 @@ module Riak
     # @param [String] content_type encoding for map/reduce job
     # @return [RpbMapRedResp] the response, encoded in the same format that was sent
     def map_reduce_request(mr_request, content_type)
-      request               = Riak::RpbMapRedReq.new
+      request               = Riakpb::RpbMapRedReq.new
       request.request       = mr_request
       request.content_type  = content_type
 
@@ -236,7 +236,7 @@ module Riak
     alias :mapred :map_reduce_request
     alias :mr     :map_reduce_request
 
-    # Lists the buckets found in the Riak database
+    # Lists the buckets found in the Riakpb database
     # @raise [ReturnRespError] if the message response does not correlate with the message requested
     # @return [Array] list of buckets (String)
     def buckets
@@ -246,7 +246,7 @@ module Riak
       @buckets = response.buckets.each{|b| b}
     end
 
-    # Lists the keys within their respective buckets, that are found in the Riak database
+    # Lists the keys within their respective buckets, that are found in the Riakpb database
     # @param [String] bucket the bucket from which to retrieve the list of keys
     # @raise [ReturnRespError] if the message response does not correlate with the message requested
     # @return [Hash] Mapping of the buckets (String) to their keys (Array of Strings)
@@ -269,5 +269,5 @@ module Riak
     end
 
   end # class Client
-end # module Riak
+end # module Riakpb
 

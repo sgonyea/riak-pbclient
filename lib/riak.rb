@@ -8,14 +8,14 @@ require 'yaml'
 require 'base64'
 require 'riak/client_pb'
 
-module Riak
-  VERSION = '0.1.6'
+module Riakpb
+  VERSION = '0.2.0'
 
   # Domain objects
   autoload :I18n,             'riak/i18n'
   autoload :Client,           'riak/client'
   autoload :Key,              'riak/key'
-  autoload :RiakContent,      'riak/riak_content'
+  autoload :Content,          'riak/content'
   autoload :Bucket,           'riak/bucket'
   autoload :MapReduce,        'riak/map_reduce'
 

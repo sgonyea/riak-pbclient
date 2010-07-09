@@ -1,6 +1,6 @@
 require 'riak'
 
-module Riak
+module Riakpb
   # Class for invoking map-reduce jobs using the HTTP interface.
   class MapReduce
     include Util::Translation
@@ -15,7 +15,7 @@ module Riak
     attr_accessor :query
 
     # Creates a new map-reduce job.
-    # @param [Client] client the Riak::Client interface
+    # @param [Client] client the Riakpb::Client interface
     # @yield [self] helpful for initializing the job
     def initialize(client)
       @client, @inputs, @query = client, [], []
@@ -44,16 +44,16 @@ module Riak
       when 1
         p = params.first
         case p
-        when Riak::Bucket
+        when Riakpb::Bucket
           @inputs = p.name
-        when Riak::Key
+        when Riakpb::Key
           @inputs << p.to_input
         when String
           @inputs = p
         end
       when 2..3
         bucket = params.shift
-        bucket = bucket.name if Riak::Bucket === bucket
+        bucket = bucket.name if Riakpb::Bucket === bucket
         @inputs << params.unshift(bucket)
       end
       self
@@ -135,7 +135,7 @@ module Riak
       # @return [Symbol] the type of phase - :map, :reduce, or :link
       attr_accessor :type
 
-      # @return [String, Array<String, String>, Hash, WalkSpec] For :map and :reduce types, the Javascript function to run (as a string or hash with bucket/key), or the module + function in Erlang to run. For a :link type, a {Riak::WalkSpec} or an equivalent hash.
+      # @return [String, Array<String, String>, Hash, WalkSpec] For :map and :reduce types, the Javascript function to run (as a string or hash with bucket/key), or the module + function in Erlang to run. For a :link type, a {Riakpb::WalkSpec} or an equivalent hash.
       attr_accessor :function
 
       # @return [String] the language of the phase's function - "javascript" or "erlang". Meaningless for :link type phases.
