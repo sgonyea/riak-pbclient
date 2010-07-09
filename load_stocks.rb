@@ -1,4 +1,4 @@
-require 'riak'
+require 'riakpb'
 require 'csv'
 
 client = Riakpb::Client.new

@@ -126,7 +126,7 @@ I'm working on ways to simplify M/R requests.  It works the same as in ripple.  
 
 === Load the GOOG stocks from the riak Fast Track:
 
-  require 'riak'
+  require 'riakpb'
   require 'csv'
 
   client = Riakpb::Client.new

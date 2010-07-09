@@ -1,7 +1,7 @@
 require 'rubygems'
 require 'rake/gempackagetask'
 require 'fileutils'
-require './lib/riak'
+require './lib/riakpb'
 
 gemspec = Gem::Specification.new do |gem|
   gem.name = "riakpb"
@@ -24,7 +24,7 @@ gemspec = Gem::Specification.new do |gem|
   files.exclude '**/*.orig'
   files.exclude '**/*.rej'
   files.exclude /^pkg/
-  files.exclude 'riak-client.gemspec'
+  files.exclude 'riakpb.gemspec'
 
   gem.files = files.to_a
 
@@ -55,7 +55,7 @@ require 'rspec/core/rake_task'
 
 desc "Run Unit Specs Only"
 Rspec::Core::RakeTask.new(:spec) do |spec|
-  spec.pattern = "spec/riak/**/*_spec.rb"
+  spec.pattern = "spec/riakpb/**/*_spec.rb"
 end
 
 namespace :spec do
