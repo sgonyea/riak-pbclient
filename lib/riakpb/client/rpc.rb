@@ -67,8 +67,8 @@ module Riakpb
         @set_c_id_req     ||= assemble_request( Util::MessageCode::SET_CLIENT_ID_REQUEST,
                                                 @set_client_id.serialize_to_string)
 
-        socket.send(@set_c_id_req, 0)
-        set_c_id_resp       = socket.recv(@limit)
+        socket.write(@set_c_id_req)
+        set_c_id_resp       = socket.sysread(@limit)
 
         resp_code, resp_msg = decode_message(set_c_id_resp)
 
@@ -93,8 +93,8 @@ module Riakpb
               @req_message  = assemble_request mc
             end
 
-            socket.send(@req_message, 0)
-            self.parse_response socket.recv(@limit)
+            socket.write(@req_message)
+            self.parse_response socket.sysread(@limit)
 
           end while(false == (@response[:done] rescue true))
 
