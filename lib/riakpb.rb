@@ -9,8 +9,6 @@ require 'base64'
 require 'riakpb/client_pb'
 
 module Riakpb
-  VERSION = '0.2.2'
-
   # Domain objects
   autoload :I18n,             'riakpb/i18n'
   autoload :Client,           'riakpb/client'
