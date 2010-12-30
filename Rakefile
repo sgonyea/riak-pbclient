@@ -1,57 +1,26 @@
-require 'rubygems'
-require 'rake/gempackagetask'
-require 'fileutils'
-require './lib/riakpb'
+require 'bundler'
 
-gemspec = Gem::Specification.new do |gem|
-  gem.name = "riakpb"
-  gem.summary = %Q{riakpb is a protocol buffer client for Riakpb--the distributed database by Basho.}
-  gem.description = %Q{riakpb is a protocol buffer client for Riakpb--the distributed database by Basho.}
-  gem.version = Riakpb::VERSION
-  gem.email = "me@inherentlylame.com"
-  gem.homepage = "http://github.com/aitrus/riak-pbclient"
-  gem.authors = ["Scott Gonyea"]
-  gem.add_development_dependency "rspec", "~>2.0.0.beta.9"
-  gem.add_dependency "activesupport", ">= 2.3.5"
-  gem.add_dependency "ruby_protobuf", ">=0.4.4"
-
-  files = FileList["**/*"]
-  files.exclude /\.DS_Store/
-  files.exclude /\#/
-  files.exclude /~/
-  files.exclude /\.swp/
-  files.exclude '**/._*'
-  files.exclude '**/*.orig'
-  files.exclude '**/*.rej'
-  files.exclude /^pkg/
-  files.exclude 'riakpb.gemspec'
-
-  gem.files = files.to_a
-
-  gem.test_files = FileList["spec/**/*.rb"].to_a
-end
-
-# Gem packaging tasks
-Rake::GemPackageTask.new(gemspec) do |pkg|
-  pkg.need_zip = false
-  pkg.need_tar = false
-end
-
-task :gem => :gemspec
-
-desc %{Build the gemspec file.}
-task :gemspec do
-  gemspec.validate
-  File.open("#{gemspec.name}.gemspec", 'w'){|f| f.write gemspec.to_ruby }
-end
-
-desc %{Release the gem to RubyGems.org}
-task :release => :gem do
-  "gem push pkg/#{gemspec.name}-#{gemspec.version}.gem"
-end
+Bundler::GemHelper.install_tasks
 
 require 'rspec/core'
 require 'rspec/core/rake_task'
+
+
+task :release => :spec
+
+desc "Run Specs"
+Rspec::Core::RakeTask.new(:spec) do |spec|
+  spec.pattern    = "spec/**/*_spec.rb"
+  spec.verbose    = true
+  spec.rspec_opts = ['--color']
+end
+
+require 'yard'
+
+desc "Generate YARD docs"
+YARD::Rake::YardocTask.new(:yard) do |t|
+  t.files += ['lib/**/*.rb']
+end
 
 desc "Run Unit Specs Only"
 Rspec::Core::RakeTask.new(:spec) do |spec|
@@ -73,4 +42,3 @@ end
 # TODO - want other tests/tasks run by default? Add them to the list
 # remove_task :default
 # task :default => [:spec, :features]
-
