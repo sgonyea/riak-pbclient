@@ -1,4 +1,8 @@
-require 'riakpb'
+require 'rubygems' if RUBY_VERSION < '1.9'
+require 'bundler'
+
+Bundler.setup
+
 require 'csv'
 
 client = Riakpb::Client.new
