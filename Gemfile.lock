@@ -1,9 +1,9 @@
 PATH
   remote: .
   specs:
-    riakpb (0.0.1)
+    riakpb (0.3.0)
       activesupport (~> 3.0.0)
-      ruby_protobuf (~> 0.4.8)
+      ruby_protobuf (~> 0.4.9)
       yard (~> 0.6.4)
 
 GEM
@@ -12,24 +12,21 @@ GEM
     activesupport (3.0.3)
     diff-lcs (1.1.2)
     i18n (0.5.0)
-    rspec (2.3.0)
-      rspec-core (~> 2.3.0)
-      rspec-expectations (~> 2.3.0)
-      rspec-mocks (~> 2.3.0)
-    rspec-core (2.3.1)
-    rspec-expectations (2.3.0)
+    rspec (2.4.0)
+      rspec-core (~> 2.4.0)
+      rspec-expectations (~> 2.4.0)
+      rspec-mocks (~> 2.4.0)
+    rspec-core (2.4.0)
+    rspec-expectations (2.4.0)
       diff-lcs (~> 1.1.2)
-    rspec-mocks (2.3.0)
-    ruby_protobuf (0.4.8)
+    rspec-mocks (2.4.0)
+    ruby_protobuf (0.4.9)
     yard (0.6.4)
 
 PLATFORMS
   ruby
 
 DEPENDENCIES
-  activesupport (~> 3.0.0)
   i18n (~> 0.5.0)
   riakpb!
-  rspec (~> 2.3.0)
-  ruby_protobuf (~> 0.4.8)
-  yard (~> 0.6.4)
+  rspec (~> 2.4.0)
