@@ -19,10 +19,10 @@ Gem::Specification.new do |s|
   s.require_paths = ["lib"]
 
   s.add_dependency 'activesupport', '~> 3.0.0'
-  s.add_dependency 'ruby_protobuf', '~> 0.4.8'
+  s.add_dependency 'ruby_protobuf', '~> 0.4.9'
 
   s.add_dependency 'yard', '~> 0.6.4'
 
-  s.add_development_dependency 'rspec', '~> 2.3.0'
+  s.add_development_dependency 'rspec', '~> 2.4.0'
   s.add_development_dependency 'i18n',  '~> 0.5.0'
 end
