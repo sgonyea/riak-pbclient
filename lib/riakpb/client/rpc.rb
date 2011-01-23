@@ -1,7 +1,7 @@
 # Special thanks to:
 #
 # - Radar in #ruby-lang
-# - xnotdotorg / arilerner[at]gmail.com - 
+# - xnotdotorg / arilerner[at]gmail.com -
 #     http://blog.xnot.org/2008/11/16/communicating-from-ruby-to-erlang/
 #
 require 'socket'
@@ -16,7 +16,7 @@ module Riakpb
 
       RECV_LIMIT=1073741824
 
-      attr_reader :req_message, :response, :resp_message_codes, :resp_message, :status
+      attr_reader :req_message, :response, :resp_message_codes, :resp_message, :status, :socket
 
       # Establishes a Client ID with the Riakpb node, for the life of the RPC connection.
       # @param [Client] client the Riakpb::Client object in which this Rpc instance lives
@@ -50,31 +50,32 @@ module Riakpb
       # Opens a TCPSocket connection with the riak host/node
       # @yield [TCPSocket] hands off the socket connection
       # @return [TCPSocket] data that was exchanged with the host/node
-      def with_socket(&block)
-        socket              = TCPSocket.open(@client.host, @client.port)
-        set_client_id(socket) if @set_client_id
+      def with_socket
+        set_client_id unless @set_client_id.nil?
 
-        out                 = yield(socket)
-        socket.close
+        yield(socket)
+      end
 
-        return(out)
+      # @return [TCPSocket] The TCPSocket of the remote riak node
+      def socket
+        @socket ||= TCPSocket.open(@client.host, @client.port)
       end
 
       # Sets the Client ID for the TCPSocket session
       # @param [TCPSocket] socket connection for which the Client ID will be set
       # @return [True/False] whether or not the set client id request succeeded
-      def set_client_id(socket)
+      def set_client_id
         @set_c_id_req     ||= assemble_request( Util::MessageCode::SET_CLIENT_ID_REQUEST,
                                                 @set_client_id.serialize_to_string)
 
         socket.write(@set_c_id_req)
-        set_c_id_resp       = socket.sysread(@limit)
+        set_c_id_resp = socket.sysread(@limit)
 
         resp_code, resp_msg = decode_message(set_c_id_resp)
 
         return(resp_code == Util::MessageCode::SET_CLIENT_ID_RESPONSE)
       end
-      
+
       # Sends the request to the riak node
       # @param [Fixnum] mc The message code that identifies the request
       # @param [Protobuf::Message] pb_msg The protobuf message, if applicable, for the message code
@@ -112,8 +113,6 @@ module Riakpb
 
         value = @buffer + value
 
-#        return {:done => false} if message_remaining?(@resp_message)
-
         response_chunk, @resp_message_codes, @buffer = decode_message(value)
 
         @resp_message_codes.each do |resp_mc|
@@ -126,7 +125,7 @@ module Riakpb
             raise FailedExchange.new(MC_RESPONSE_FOR[@req_message_code], @resp_message_codes, response_chunk, "failed_request")
           end
         end
-        
+
         if response_chunk.size > 0
           @response.parse_from_string response_chunk
         end
