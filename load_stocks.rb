@@ -12,7 +12,7 @@ client = Riakpb::Client.new
 bucket = client["goog"]
 
 CSV.foreach('goog.csv', :headers => true) do |row|
-  @noisy && puts(row.first[1].to_s)
+  puts(row.first[1].to_s) if @noisy
 
   key = bucket[row.first[1].to_s]
   key.content.value = Hash[row.to_a]
